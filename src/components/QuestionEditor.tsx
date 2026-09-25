@@ -37,10 +37,12 @@ const TYPE_LABELS: Record<QuestionType, string> = {
 
 export function QuestionEditor({
   question,
+  index,
   onChange,
   onRemove,
 }: {
   question: EditableQuestion;
+  index: number;
   onChange: (next: EditableQuestion) => void;
   onRemove: () => void;
 }) {
@@ -72,55 +74,53 @@ export function QuestionEditor({
   }
 
   return (
-    <div className="card p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
-            <label className="label">
-              Key
-            </label>
-            <input
-              value={question.key}
-              onChange={(e) => set("key", e.target.value)}
-              placeholder="e.g. is_out_of_scope"
-              className="field font-mono text-xs"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="label">
-              Type
-            </label>
-            <select
-              value={question.type}
-              onChange={(e) => setType(e.target.value as QuestionType)}
-              className="field"
-            >
-              {Object.entries(TYPE_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+    <div className="card p-5 sm:p-6">
+      <div className="flex items-center justify-between gap-3">
+        <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-copper">
+          {String(index + 1).padStart(2, "0")}
+        </p>
         <button
           type="button"
           onClick={onRemove}
-          className="mt-6 text-sm text-danger hover:underline"
+          className="text-xs text-ink-mute transition-colors hover:text-danger"
         >
           Remove
         </button>
       </div>
 
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="flex flex-col gap-1.5">
+          <label className="label">Key</label>
+          <input
+            value={question.key}
+            onChange={(e) => set("key", e.target.value)}
+            placeholder="e.g. is_out_of_scope"
+            className="field font-mono text-xs"
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="label">Type</label>
+          <select
+            value={question.type}
+            onChange={(e) => setType(e.target.value as QuestionType)}
+            className="field"
+          >
+            {Object.entries(TYPE_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       <div className="mt-4 flex flex-col gap-1.5">
-        <label className="label">
-          Instructions — the question Jev should answer
-        </label>
+        <label className="label">The question Jev should answer</label>
         <textarea
           value={question.instructions}
           onChange={(e) => set("instructions", e.target.value)}
-          rows={2}
-          className="field"
+          rows={3}
+          className="field resize-none"
         />
       </div>
 
@@ -132,10 +132,8 @@ export function QuestionEditor({
         )}
       </div>
 
-      <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-line pt-4">
-        <label className="label">
-          Confidence threshold
-        </label>
+      <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-line/80 pt-4">
+        <label className="label">Confidence threshold</label>
         <input
           type="range"
           min={0}
@@ -149,7 +147,7 @@ export function QuestionEditor({
           {question.confidence_threshold.toFixed(2)}
         </span>
         <span className="text-xs text-ink-mute">
-          Below this, the response is flagged <code className="font-mono">needs_review</code>.
+          Below this, the answer is flagged for review.
         </span>
       </div>
     </div>
@@ -207,15 +205,15 @@ function ChoicePairsEditor({
             <button
               type="button"
               onClick={() => removePair(i)}
-              className="text-sm text-ink-mute hover:text-danger"
+              className="text-xs text-ink-mute transition-colors hover:text-danger"
             >
-              ✕
+              Remove
             </button>
           )}
         </div>
       ))}
       {question.type !== "noul" && (
-        <button type="button" onClick={addPair} className="w-fit text-sm text-copper underline">
+        <button type="button" onClick={addPair} className="w-fit text-sm text-copper">
           + Add option
         </button>
       )}
@@ -260,13 +258,13 @@ function ScoreLevelsEditor({
           <button
             type="button"
             onClick={() => removeLevel(i)}
-            className="text-sm text-ink-mute hover:text-danger"
+            className="text-xs text-ink-mute transition-colors hover:text-danger"
           >
-            ✕
+            Remove
           </button>
         </div>
       ))}
-      <button type="button" onClick={addLevel} className="w-fit text-sm text-copper underline">
+      <button type="button" onClick={addLevel} className="w-fit text-sm text-copper">
         + Add level
       </button>
     </div>

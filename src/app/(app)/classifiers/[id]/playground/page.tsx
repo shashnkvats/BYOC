@@ -2,9 +2,32 @@
 
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ClassifierSubnav, StatusBadge } from "@/components/ui";
+import { ClassifierPageHeader, StatusBadge } from "@/components/ui";
 import { api, ApiError } from "@/lib/api-client";
-import type { ClassifierOut, TestResponse } from "@/lib/types";
+import { TemplateTypeHint } from "@/lib/templates";
+import type { ClassifierOut, JevAnswer, QuestionAnswerFlag, TestResponse } from "@/lib/types";
+
+function answerValue(answer: JevAnswer | undefined): string {
+  if (!answer) return "—";
+  if (typeof answer === "object") {
+    if ("answer" in answer && answer.answer != null) return String(answer.answer);
+    if ("choice" in answer && answer.choice != null) return String(answer.choice);
+    if ("score" in answer && answer.score != null) return String(answer.score);
+  }
+  return String(answer);
+}
+
+function formatLedger(flags: QuestionAnswerFlag[], answers: Record<string, JevAnswer>): string {
+  const keyWidth = Math.max(12, ...flags.map((f) => f.key.length));
+  return flags
+    .map((f) => {
+      const value = answerValue(answers[f.key]);
+      const conf =
+        f.effective_confidence !== null ? f.effective_confidence.toFixed(2) : "n/a";
+      return `${f.key.padEnd(keyWidth + 2)}${value.padEnd(10)}${conf}`;
+    })
+    .join("\n");
+}
 
 export default function PlaygroundPage() {
   const params = useParams<{ id: string }>();
@@ -37,35 +60,35 @@ export default function PlaygroundPage() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="kicker">Try it</p>
-          <h1 className="display-page mt-1">
-            Playground
-          </h1>
-          {classifier && (
-            <p className="copy mt-1 text-ink-mute">{classifier.name}</p>
-          )}
-        </div>
-        <ClassifierSubnav id={id} current="playground" />
-      </div>
+      <ClassifierPageHeader
+        id={id}
+        current="playground"
+        kicker="Try it"
+        title="Playground"
+        subtitle={classifier?.name}
+        meta={classifier ? <TemplateTypeHint type={classifier.template_type} /> : undefined}
+      />
 
-      <div className="card flex flex-col gap-3 p-5">
-        <label className="label">
-          Input state — the message Jev will classify
-        </label>
+      <div className="card flex flex-col gap-4 p-5 sm:p-6">
+        <div>
+          <p className="kicker">A trial run</p>
+          <h2 className="display-card mt-2">Give it a message.</h2>
+          <p className="mt-1 text-[15px] leading-6 text-ink-mute">
+            The state Jev will classify — a user message, or a scrap of conversation.
+          </p>
+        </div>
         <textarea
           value={state}
           onChange={(e) => setState(e.target.value)}
-          rows={6}
-          placeholder="Paste a sample user message or conversation context here..."
-          className="field"
+          rows={7}
+          placeholder="Paste a sample user message here..."
+          className="field resize-none"
         />
         <button
           type="button"
           onClick={handleRun}
           disabled={running || !state.trim()}
-          className="btn btn-copper w-fit"
+          className="btn btn-copper w-fit text-[14px] font-semibold"
         >
           {running ? "Running..." : "Run"}
         </button>
@@ -74,37 +97,23 @@ export default function PlaygroundPage() {
       {error && <p className="text-sm text-danger">{error}</p>}
 
       {result && (
-        <div className="card flex flex-col gap-4 p-5">
-          <div className="flex items-center justify-between">
-            <span className="font-mono text-xs text-ink-mute">{result.model}</span>
+        <div className="overflow-hidden rounded-2xl border border-line bg-ink text-paper">
+          <div className="flex items-center justify-between border-b border-white/10 px-5 py-3">
+            <span className="text-[0.7rem] uppercase tracking-[0.16em] text-paper/55">
+              {result.model}
+            </span>
             <StatusBadge status={result.needs_review ? "needs_review" : "confident"} />
           </div>
-
           {result.warnings.length > 0 && (
-            <ul className="text-sm text-amber">
+            <ul className="border-b border-white/10 px-5 py-3 text-sm text-amber-soft">
               {result.warnings.map((w, i) => (
                 <li key={i}>{w}</li>
               ))}
             </ul>
           )}
-
-          <pre className="code-block">{JSON.stringify(result.answers, null, 2)}</pre>
-
-          <div className="flex flex-col gap-2">
-            {result.flags.map((f) => (
-              <div
-                key={f.key}
-                className="flex items-center justify-between border-t border-line pt-2 text-sm"
-              >
-                <span className="font-mono text-xs">{f.key}</span>
-                <span className={`font-mono text-sm tracking-[0.02em] ${f.needs_review ? "text-amber" : "text-ink-mute"}`}>
-                  {f.effective_confidence !== null
-                    ? f.effective_confidence.toFixed(2)
-                    : "n/a"}
-                </span>
-              </div>
-            ))}
-          </div>
+          <pre className="tech-output overflow-x-auto px-5 py-4 text-paper/90">
+            {formatLedger(result.flags, result.answers)}
+          </pre>
         </div>
       )}
     </div>

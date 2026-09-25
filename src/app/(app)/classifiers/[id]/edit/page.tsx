@@ -2,8 +2,9 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Plus } from "lucide-react";
 import { EditableQuestion, QuestionEditor } from "@/components/QuestionEditor";
-import { ClassifierSubnav, StatusBadge } from "@/components/ui";
+import { ClassifierPageHeader, StatusBadge } from "@/components/ui";
 import { api, ApiError } from "@/lib/api-client";
 import {
   editableToQuestionIn,
@@ -11,6 +12,7 @@ import {
   questionInToEditable,
   questionOutToEditable,
 } from "@/lib/question-convert";
+import { TemplateTypeHint } from "@/lib/templates";
 import type { BelowThresholdAction, ClassifierOut } from "@/lib/types";
 
 export default function EditClassifierPage() {
@@ -106,24 +108,23 @@ export default function EditClassifierPage() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="kicker">Editor</p>
-          <h1 className="display-page mt-1">
-            {classifier.name}
-          </h1>
-          <div className="mt-2">
+      <ClassifierPageHeader
+        id={id}
+        current="edit"
+        kicker="Editor"
+        title={classifier.name}
+        meta={
+          <>
+            <TemplateTypeHint type={classifier.template_type} />
             <StatusBadge status={classifier.status} />
-          </div>
-        </div>
-        <ClassifierSubnav id={id} current="edit" />
-      </div>
+          </>
+        }
+      />
 
-      <section className="card flex flex-col gap-4 p-5">
+      <section className="card flex flex-col gap-5 p-5 sm:p-6">
+        <p className="kicker">The brief</p>
         <div className="flex flex-col gap-1.5">
-          <label className="label">
-            Name
-          </label>
+          <label className="label">Name</label>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -131,40 +132,41 @@ export default function EditClassifierPage() {
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="label">
-            Description
-          </label>
+          <label className="label">Description</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            rows={2}
-            className="field"
+            rows={3}
+            className="field resize-none"
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="label">
-            When a question falls below its threshold
-          </label>
+          <label className="label">When confidence falls short</label>
           <select
             value={belowThresholdAction}
             onChange={(e) => setBelowThresholdAction(e.target.value as BelowThresholdAction)}
-            className="field w-fit"
+            className="field max-w-md"
           >
-            <option value="flag_for_review">Flag response as needs_review</option>
+            <option value="flag_for_review">Flag the response for review</option>
             <option value="return_as_is">Return the answer as-is</option>
           </select>
         </div>
       </section>
 
-      <section className="card flex flex-col gap-3 border-dashed p-5">
-        <p className="kicker">Optional assist</p>
-        <label className="display-card">Draft questions with AI</label>
+      <section className="card flex flex-col gap-4 p-5 sm:p-6">
+        <div>
+          <p className="kicker">Optional</p>
+          <h2 className="display-card mt-2">Draft questions with AI</h2>
+          <p className="mt-1 text-[15px] leading-6 text-ink-mute">
+            Describe the decision in plain English. Review anything it drafts before you save.
+          </p>
+        </div>
         <textarea
           value={aiDescription}
           onChange={(e) => setAiDescription(e.target.value)}
           rows={3}
-          placeholder="Describe in plain English what this classifier should check for..."
-          className="field"
+          placeholder="What should this classifier check for?"
+          className="field resize-none"
         />
         <button
           type="button"
@@ -178,14 +180,18 @@ export default function EditClassifierPage() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h2 className="display-section">Questions</h2>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="kicker">The questions</p>
+            <h2 className="display-section mt-1">What Jev should decide</h2>
+          </div>
           <button
             type="button"
             onClick={() => setQuestions((prev) => [...prev, makeBlankEditable()])}
-            className="text-sm text-copper underline"
+            className="btn btn-ghost w-fit"
           >
-            + Add question
+            <Plus size={16} strokeWidth={2} aria-hidden="true" />
+            Add question
           </button>
         </div>
         {questions.length === 0 && (
@@ -194,6 +200,7 @@ export default function EditClassifierPage() {
         {questions.map((q, i) => (
           <QuestionEditor
             key={q.uid}
+            index={i}
             question={q}
             onChange={(next) =>
               setQuestions((prev) => prev.map((p, idx) => (idx === i ? next : p)))
@@ -208,7 +215,7 @@ export default function EditClassifierPage() {
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="btn btn-primary"
+          className="btn btn-copper text-[14px] font-semibold"
         >
           {saving ? "Saving..." : "Save"}
         </button>
@@ -217,7 +224,7 @@ export default function EditClassifierPage() {
         <button
           type="button"
           onClick={handleDelete}
-          className="ml-auto text-sm text-danger hover:underline"
+          className="ml-auto text-sm text-ink-mute transition-colors hover:text-danger"
         >
           Delete classifier
         </button>

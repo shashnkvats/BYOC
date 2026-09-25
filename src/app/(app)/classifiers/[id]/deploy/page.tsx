@@ -2,8 +2,9 @@
 
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ClassifierSubnav } from "@/components/ui";
+import { ClassifierPageHeader } from "@/components/ui";
 import { api, ApiError } from "@/lib/api-client";
+import { TemplateTypeHint } from "@/lib/templates";
 import type { ClassifierOut } from "@/lib/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8001";
@@ -45,21 +46,22 @@ export default function DeployPage() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="kicker">Go live</p>
-          <h1 className="display-page mt-1">Deploy</h1>
-          <p className="copy mt-1 text-ink-mute">{classifier.name}</p>
-        </div>
-        <ClassifierSubnav id={id} current="deploy" />
-      </div>
+      <ClassifierPageHeader
+        id={id}
+        current="deploy"
+        kicker="Go live"
+        title="Deploy"
+        subtitle={classifier.name}
+        meta={<TemplateTypeHint type={classifier.template_type} />}
+      />
 
       {classifier.status !== "published" && !apiKey && (
-        <div className="card p-6">
-          <h2 className="display-section">
+        <div className="card p-5 sm:p-6">
+          <p className="kicker">Not yet public</p>
+          <h2 className="display-section mt-2">
             Still a <span className="font-editorial text-copper">draft.</span>
           </h2>
-          <p className="copy mt-2 text-ink-mute">
+          <p className="mt-2 max-w-md text-[15px] leading-6 text-ink-mute">
             Publish to mint a live API key and endpoint. The raw key is shown once —
             after that, only its hash lives in the database.
           </p>
@@ -67,7 +69,7 @@ export default function DeployPage() {
             type="button"
             onClick={handlePublish}
             disabled={publishing}
-            className="btn btn-copper mt-5"
+            className="btn btn-copper mt-5 text-[14px] font-semibold"
           >
             {publishing ? "Publishing..." : "Publish"}
           </button>
@@ -75,11 +77,12 @@ export default function DeployPage() {
       )}
 
       {classifier.status === "published" && !apiKey && (
-        <div className="card p-6">
-          <h2 className="display-section">
+        <div className="card p-5 sm:p-6">
+          <p className="kicker">On the wire</p>
+          <h2 className="display-section mt-2">
             Already <span className="font-editorial text-copper">live.</span>
           </h2>
-          <p className="copy mt-2 text-ink-mute">
+          <p className="mt-2 max-w-md text-[15px] leading-6 text-ink-mute">
             The API key was only shown once at publish time and can&apos;t be retrieved
             again. Re-publishing mints a new key and revokes the old one.
           </p>

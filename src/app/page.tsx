@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
-import { TEMPLATE_META } from "@/lib/templates";
+import { TEMPLATE_META, TemplateIcon } from "@/lib/templates";
 
 const TEMPLATES = [
-  TEMPLATE_META.guardrail,
-  TEMPLATE_META.agent_routing,
-  TEMPLATE_META.mcp_tool_routing,
-  TEMPLATE_META.model_routing,
+  { type: "guardrail" as const, ...TEMPLATE_META.guardrail },
+  { type: "agent_routing" as const, ...TEMPLATE_META.agent_routing },
+  { type: "mcp_tool_routing" as const, ...TEMPLATE_META.mcp_tool_routing },
+  { type: "model_routing" as const, ...TEMPLATE_META.model_routing },
 ];
 
 export default function Home() {
@@ -54,7 +54,9 @@ is_harmful        false   0.94`}
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
             {TEMPLATES.map((t) => (
               <div key={t.label} className="card p-5">
-                <p className="text-copper">{t.mark}</p>
+                <p className="text-copper">
+                  <TemplateIcon type={t.type} />
+                </p>
                 <h3 className="display-card mt-2">{t.label}</h3>
                 <p className="copy mt-1 text-ink-mute">{t.blurb}</p>
               </div>

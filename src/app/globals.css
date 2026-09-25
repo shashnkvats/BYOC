@@ -135,17 +135,18 @@ body::before {
   color: var(--ink-mute);
 }
 
-.btn-icon {
-  width: 2.75rem;
-  height: 2.75rem;
-  padding: 0;
-  overflow: hidden;
-  font-size: 2.85rem;
-  font-weight: 700;
-  line-height: 0.72;
-  -webkit-text-stroke: 1px currentColor;
-  color: #fff7ef;
-  box-shadow: 0 8px 20px rgba(196, 92, 38, 0.28);
+.workshop-row {
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.workshop-row:hover {
+  border-color: color-mix(in srgb, var(--ink) 20%, var(--line));
+  box-shadow: 0 6px 16px rgba(28, 25, 20, 0.045);
+  transform: translateY(-1px);
 }
 
 .lede {
@@ -188,12 +189,25 @@ body::before {
   width: 100%;
   border-radius: 0.7rem;
   border: 1px solid var(--line);
-  background: var(--paper-raised);
-  padding: 0.6rem 0.8rem;
-  font-size: 0.875rem;
+  background: var(--paper);
+  padding: 0.7rem 0.9rem;
+  font-family: var(--font-sans), sans-serif;
+  font-size: 0.9375rem;
   color: var(--ink);
   outline: none;
   transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.field::placeholder {
+  color: color-mix(in srgb, var(--ink-mute) 72%, transparent);
+}
+
+select.field {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b6458' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  padding-right: 2.4rem;
 }
 
 .field:focus {
@@ -251,6 +265,10 @@ body::before {
   color: #fff7ef;
 }
 
+.btn-copper:not(:disabled):hover {
+  background: color-mix(in srgb, var(--copper) 88%, var(--ink));
+}
+
 .btn-ghost {
   border: 1px solid var(--line);
   background: transparent;
@@ -266,12 +284,22 @@ body::before {
 .badge-review {
   display: inline-flex;
   align-items: center;
+  gap: 0.35rem;
   border-radius: 999px;
-  padding: 0.2rem 0.65rem;
-  font-size: 0.68rem;
+  padding: 0.22rem 0.6rem;
+  font-family: var(--font-sans), sans-serif;
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  text-transform: none;
+}
+
+.status-dot {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: currentColor;
 }
 
 .badge-live {
