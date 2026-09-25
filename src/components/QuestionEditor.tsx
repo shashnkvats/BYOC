@@ -72,26 +72,28 @@ export function QuestionEditor({
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
+    <div className="card p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500">
-              Key (used in the response JSON)
+          <div className="flex flex-col gap-1.5">
+            <label className="label">
+              Key
             </label>
             <input
               value={question.key}
               onChange={(e) => set("key", e.target.value)}
               placeholder="e.g. is_out_of_scope"
-              className="rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
+              className="field font-mono text-xs"
             />
           </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500">Type</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="label">
+              Type
+            </label>
             <select
               value={question.type}
               onChange={(e) => setType(e.target.value as QuestionType)}
-              className="rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
+              className="field"
             >
               {Object.entries(TYPE_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -104,25 +106,25 @@ export function QuestionEditor({
         <button
           type="button"
           onClick={onRemove}
-          className="mt-5 text-sm text-red-600 hover:underline"
+          className="mt-6 text-sm text-danger hover:underline"
         >
           Remove
         </button>
       </div>
 
-      <div className="mt-3 flex flex-col gap-1">
-        <label className="text-xs font-medium text-gray-500">
-          Instructions - the plain-English question Jev should answer
+      <div className="mt-4 flex flex-col gap-1.5">
+        <label className="label">
+          Instructions — the question Jev should answer
         </label>
         <textarea
           value={question.instructions}
           onChange={(e) => set("instructions", e.target.value)}
           rows={2}
-          className="rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
+          className="field"
         />
       </div>
 
-      <div className="mt-3">
+      <div className="mt-4">
         {question.type === "score" ? (
           <ScoreLevelsEditor question={question} onChange={onChange} />
         ) : (
@@ -130,9 +132,9 @@ export function QuestionEditor({
         )}
       </div>
 
-      <div className="mt-3 flex items-center gap-3">
-        <label className="text-xs font-medium text-gray-500">
-          Confidence threshold ({question.confidence_threshold.toFixed(2)})
+      <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-line pt-4">
+        <label className="label">
+          Confidence threshold
         </label>
         <input
           type="range"
@@ -143,8 +145,11 @@ export function QuestionEditor({
           onChange={(e) => set("confidence_threshold", Number(e.target.value))}
           className="w-40"
         />
-        <span className="text-xs text-gray-400">
-          Below this, the response is flagged <code>needs_review</code>.
+        <span className="font-mono text-sm text-copper">
+          {question.confidence_threshold.toFixed(2)}
+        </span>
+        <span className="text-xs text-ink-mute">
+          Below this, the response is flagged <code className="font-mono">needs_review</code>.
         </span>
       </div>
     </div>
@@ -180,7 +185,9 @@ function ChoicePairsEditor({
 
   return (
     <div className="flex flex-col gap-2">
-      <label className="text-xs font-medium text-gray-500">{label}</label>
+      <label className="label">
+        {label}
+      </label>
       {question.choicePairs.map((pair, i) => (
         <div key={i} className="flex gap-2">
           <input
@@ -188,19 +195,19 @@ function ChoicePairsEditor({
             onChange={(e) => updatePair(i, "key", e.target.value)}
             placeholder={question.type === "noul" ? "true / false" : "option_key"}
             disabled={question.type === "noul"}
-            className="w-36 rounded-md border border-gray-300 px-2.5 py-1.5 text-sm disabled:bg-gray-100"
+            className="field w-36 font-mono text-xs"
           />
           <input
             value={pair.value}
             onChange={(e) => updatePair(i, "value", e.target.value)}
             placeholder="plain-English description"
-            className="flex-1 rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
+            className="field flex-1"
           />
           {question.type !== "noul" && (
             <button
               type="button"
               onClick={() => removePair(i)}
-              className="text-sm text-gray-400 hover:text-red-600"
+              className="text-sm text-ink-mute hover:text-danger"
             >
               ✕
             </button>
@@ -208,11 +215,7 @@ function ChoicePairsEditor({
         </div>
       ))}
       {question.type !== "noul" && (
-        <button
-          type="button"
-          onClick={addPair}
-          className="w-fit text-sm text-gray-600 underline"
-        >
+        <button type="button" onClick={addPair} className="w-fit text-sm text-copper underline">
           + Add option
         </button>
       )}
@@ -242,28 +245,28 @@ function ScoreLevelsEditor({
 
   return (
     <div className="flex flex-col gap-2">
-      <label className="text-xs font-medium text-gray-500">
+      <label className="label">
         Levels, ordered low to high
       </label>
       {question.scoreLevels.map((level, i) => (
         <div key={i} className="flex gap-2">
-          <span className="w-6 pt-1.5 text-xs text-gray-400">{i}</span>
+          <span className="w-6 pt-2 font-mono text-xs text-ink-mute">{i}</span>
           <input
             value={level}
             onChange={(e) => updateLevel(i, e.target.value)}
             placeholder={`Level ${i} label`}
-            className="flex-1 rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
+            className="field flex-1"
           />
           <button
             type="button"
             onClick={() => removeLevel(i)}
-            className="text-sm text-gray-400 hover:text-red-600"
+            className="text-sm text-ink-mute hover:text-danger"
           >
             ✕
           </button>
         </div>
       ))}
-      <button type="button" onClick={addLevel} className="w-fit text-sm text-gray-600 underline">
+      <button type="button" onClick={addLevel} className="w-fit text-sm text-copper underline">
         + Add level
       </button>
     </div>

@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { EditableQuestion, QuestionEditor } from "@/components/QuestionEditor";
+import { ClassifierSubnav, StatusBadge } from "@/components/ui";
 import { api, ApiError } from "@/lib/api-client";
 import {
   editableToQuestionIn,
@@ -89,7 +89,7 @@ export default function EditClassifierPage() {
         template_type: classifier.template_type,
       });
       setQuestions((prev) => [...prev, ...result.questions.map(questionInToEditable)]);
-      setAiNote(result.note ?? "Draft questions added below - review before saving.");
+      setAiNote(result.note ?? "Draft questions added below — review before saving.");
     } catch (e) {
       setAiNote(e instanceof ApiError ? e.message : "AI draft failed");
     } finally {
@@ -98,67 +98,57 @@ export default function EditClassifierPage() {
   }
 
   if (loadError) {
-    return <p className="text-sm text-red-600">{loadError}</p>;
+    return <p className="text-sm text-danger">{loadError}</p>;
   }
   if (!classifier) {
-    return <p className="text-sm text-gray-500">Loading...</p>;
+    return <p className="copy text-ink-mute">Loading the classifier...</p>;
   }
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">{classifier.name}</h1>
-          <p className="text-sm text-gray-500">
-            Status: <span className="font-medium">{classifier.status}</span>
-          </p>
+          <p className="kicker">Editor</p>
+          <h1 className="display-page mt-1">
+            {classifier.name}
+          </h1>
+          <div className="mt-2">
+            <StatusBadge status={classifier.status} />
+          </div>
         </div>
-        <div className="flex gap-2 text-sm">
-          <Link
-            href={`/classifiers/${id}/playground`}
-            className="rounded-md border border-gray-300 px-3 py-1.5"
-          >
-            Playground
-          </Link>
-          <Link
-            href={`/classifiers/${id}/deploy`}
-            className="rounded-md border border-gray-300 px-3 py-1.5"
-          >
-            Deploy
-          </Link>
-          <Link
-            href={`/classifiers/${id}/logs`}
-            className="rounded-md border border-gray-300 px-3 py-1.5"
-          >
-            Logs
-          </Link>
-        </div>
+        <ClassifierSubnav id={id} current="edit" />
       </div>
 
-      <section className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4">
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium">Name</label>
+      <section className="card flex flex-col gap-4 p-5">
+        <div className="flex flex-col gap-1.5">
+          <label className="label">
+            Name
+          </label>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
+            className="field"
           />
         </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium">Description</label>
+        <div className="flex flex-col gap-1.5">
+          <label className="label">
+            Description
+          </label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
-            className="rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
+            className="field"
           />
         </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium">When a question falls below its threshold</label>
+        <div className="flex flex-col gap-1.5">
+          <label className="label">
+            When a question falls below its threshold
+          </label>
           <select
             value={belowThresholdAction}
             onChange={(e) => setBelowThresholdAction(e.target.value as BelowThresholdAction)}
-            className="w-fit rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
+            className="field w-fit"
           >
             <option value="flag_for_review">Flag response as needs_review</option>
             <option value="return_as_is">Return the answer as-is</option>
@@ -166,39 +156,40 @@ export default function EditClassifierPage() {
         </div>
       </section>
 
-      <section className="flex flex-col gap-3 rounded-lg border border-dashed border-gray-300 bg-white p-4">
-        <label className="text-sm font-medium">Optional: draft questions with AI</label>
+      <section className="card flex flex-col gap-3 border-dashed p-5">
+        <p className="kicker">Optional assist</p>
+        <label className="display-card">Draft questions with AI</label>
         <textarea
           value={aiDescription}
           onChange={(e) => setAiDescription(e.target.value)}
           rows={3}
           placeholder="Describe in plain English what this classifier should check for..."
-          className="rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
+          className="field"
         />
         <button
           type="button"
           onClick={handleAiDraft}
           disabled={aiDrafting || !aiDescription.trim()}
-          className="w-fit rounded-md border border-gray-300 px-3 py-1.5 text-sm disabled:opacity-50"
+          className="btn btn-ghost w-fit"
         >
           {aiDrafting ? "Drafting..." : "Draft with AI"}
         </button>
-        {aiNote && <p className="text-sm text-gray-500">{aiNote}</p>}
+        {aiNote && <p className="copy text-ink-mute">{aiNote}</p>}
       </section>
 
       <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-medium">Questions</h2>
+          <h2 className="display-section">Questions</h2>
           <button
             type="button"
             onClick={() => setQuestions((prev) => [...prev, makeBlankEditable()])}
-            className="text-sm underline"
+            className="text-sm text-copper underline"
           >
             + Add question
           </button>
         </div>
         {questions.length === 0 && (
-          <p className="text-sm text-gray-500">No questions yet - add at least one.</p>
+          <p className="copy text-ink-mute">No questions yet — add at least one.</p>
         )}
         {questions.map((q, i) => (
           <QuestionEditor
@@ -217,16 +208,16 @@ export default function EditClassifierPage() {
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="btn btn-primary"
         >
           {saving ? "Saving..." : "Save"}
         </button>
-        {saved && <span className="text-sm text-green-600">Saved.</span>}
-        {saveError && <span className="text-sm text-red-600">{saveError}</span>}
+        {saved && <span className="text-sm text-moss">Saved.</span>}
+        {saveError && <span className="text-sm text-danger">{saveError}</span>}
         <button
           type="button"
           onClick={handleDelete}
-          className="ml-auto text-sm text-red-600 hover:underline"
+          className="ml-auto text-sm text-danger hover:underline"
         >
           Delete classifier
         </button>

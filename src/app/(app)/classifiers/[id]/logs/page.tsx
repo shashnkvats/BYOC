@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ClassifierSubnav, EmptyState, StatusBadge } from "@/components/ui";
 import { api, ApiError } from "@/lib/api-client";
 import type { LogOut } from "@/lib/types";
 
@@ -21,48 +21,39 @@ export default function LogsPage() {
   }, [id]);
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Logs</h1>
-        <Link href={`/classifiers/${id}/edit`} className="text-sm underline">
-          Back to editor
-        </Link>
+    <div className="mx-auto flex max-w-3xl flex-col gap-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="kicker">Audit</p>
+          <h1 className="display-page mt-1">Logs</h1>
+        </div>
+        <ClassifierSubnav id={id} current="logs" />
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      {logs === null && !error && <p className="text-sm text-gray-500">Loading...</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
+      {logs === null && !error && <p className="copy text-ink-mute">Loading...</p>}
       {logs?.length === 0 && (
-        <p className="text-sm text-gray-500">
-          No classification calls yet. Once your endpoint is deployed and called, results will
-          show up here.
-        </p>
+        <EmptyState
+          title="The ledger is empty."
+          body="Once your endpoint is deployed and called, every classification will land here."
+        />
       )}
 
       {logs && logs.length > 0 && (
         <ul className="flex flex-col gap-3">
           {logs.map((log) => (
-            <li key={log.id} className="rounded-lg border border-gray-200 bg-white p-4">
-              <div className="flex items-center justify-between text-sm text-gray-500">
-                <span>{new Date(log.created_at).toLocaleString()}</span>
-                <span
-                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                    log.needs_review
-                      ? "bg-amber-100 text-amber-700"
-                      : "bg-green-100 text-green-700"
-                  }`}
-                >
-                  {log.needs_review ? "needs review" : "confident"}
-                </span>
+            <li key={log.id} className="card p-5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-ink-mute">{new Date(log.created_at).toLocaleString()}</span>
+                <StatusBadge status={log.needs_review ? "needs_review" : "confident"} />
               </div>
               {log.state_excerpt && (
-                <p className="mt-2 truncate text-sm text-gray-700">{log.state_excerpt}</p>
+                <p className="copy mt-3 truncate text-ink">{log.state_excerpt}</p>
               )}
               {log.answers && (
-                <pre className="mt-2 overflow-x-auto rounded-md bg-gray-50 p-2 text-xs">
-                  {JSON.stringify(log.answers, null, 2)}
-                </pre>
+                <pre className="code-block mt-3">{JSON.stringify(log.answers, null, 2)}</pre>
               )}
-              <p className="mt-2 text-xs text-gray-400">
+              <p className="mt-3 font-mono text-xs text-ink-mute">
                 {log.jev_model_version_used ?? "unknown model"} · {log.latency_ms ?? "?"}ms
               </p>
             </li>

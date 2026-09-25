@@ -2,34 +2,36 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
+import { AuthShell } from "@/components/AuthShell";
 import { signup } from "@/lib/auth-actions";
 
 export default function SignupPage() {
   const [state, action, pending] = useActionState(signup, undefined);
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-4">
-      <div>
-        <h1 className="text-2xl font-semibold">Create your BYOC account</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Build Your Own Classifier, on Jev.
+    <AuthShell
+      kicker="New workshop"
+      title="Create your"
+      italic="account."
+      lede="Build a classifier in the afternoon. Call it from your agent the same day."
+      footer={
+        <p className="copy text-ink-mute">
+          Already have an account?{" "}
+          <Link href="/login" className="text-ink underline decoration-copper/50 underline-offset-4">
+            Log in
+          </Link>
         </p>
-      </div>
+      }
+    >
       <form action={action} className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="email" className="text-sm font-medium">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="email" className="label">
             Email
           </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-          />
+          <input id="email" name="email" type="email" required autoComplete="email" className="field" />
         </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="password" className="text-sm font-medium">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="password" className="label">
             Password
           </label>
           <input
@@ -38,24 +40,15 @@ export default function SignupPage() {
             type="password"
             required
             minLength={8}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+            autoComplete="new-password"
+            className="field"
           />
         </div>
-        {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded-md bg-black px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-        >
+        {state?.error && <p className="copy text-danger">{state.error}</p>}
+        <button type="submit" disabled={pending} className="btn btn-copper mt-2 w-full">
           {pending ? "Creating account..." : "Sign up"}
         </button>
       </form>
-      <p className="text-sm text-gray-500">
-        Already have an account?{" "}
-        <Link href="/login" className="underline">
-          Log in
-        </Link>
-      </p>
-    </div>
+    </AuthShell>
   );
 }

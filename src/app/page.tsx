@@ -1,76 +1,66 @@
 import Link from "next/link";
+import { SiteHeader } from "@/components/SiteHeader";
+import { TEMPLATE_META } from "@/lib/templates";
 
 const TEMPLATES = [
-  {
-    name: "Guardrail",
-    blurb:
-      "Keep a chatbot on-topic and safe - e.g. block a shopping assistant from writing code or recipes.",
-  },
-  {
-    name: "Agent / skill routing",
-    blurb: "Pick which specialist agent or skill should handle a request.",
-  },
-  {
-    name: "MCP / tool selection",
-    blurb: "Choose which tool should run next out of a dynamic tool list.",
-  },
-  {
-    name: "Model routing",
-    blurb: "Route a request to a fast/cheap model or a powerful one.",
-  },
+  TEMPLATE_META.guardrail,
+  TEMPLATE_META.agent_routing,
+  TEMPLATE_META.mcp_tool_routing,
+  TEMPLATE_META.model_routing,
 ];
 
 export default function Home() {
   return (
-    <div className="flex flex-1 flex-col bg-white">
-      <header className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-        <span className="text-lg font-semibold">BYOC</span>
-        <nav className="flex gap-4 text-sm">
-          <Link href="/login" className="text-gray-600 hover:text-black">
-            Log in
-          </Link>
-          <Link
-            href="/signup"
-            className="rounded-md bg-black px-3 py-1.5 font-medium text-white"
-          >
-            Sign up
-          </Link>
-        </nav>
-      </header>
+    <div className="flex flex-1 flex-col">
+      <SiteHeader />
 
-      <main className="mx-auto flex max-w-3xl flex-1 flex-col items-center gap-8 px-6 py-20 text-center">
-        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-          Build Your Own Classifier
+      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 pb-20 pt-10 sm:px-10">
+        <p className="kicker">On Jev · System One</p>
+        <h1 className="display-hero mt-4 max-w-3xl text-ink">
+          Build a classifier
+          <br />
+          <span className="font-editorial text-copper">the old-fashioned way.</span>
         </h1>
-        <p className="max-w-xl text-lg text-gray-600">
-          Describe a constraint or routing decision in plain English. BYOC turns it into
-          a <span className="font-medium text-black">Jev</span>-backed classifier
-          endpoint you can call from your own chatbot or agent - for guardrails, skill
-          routing, or picking the right MCP tool.
+        <p className="lede mt-6 max-w-xl text-ink-mute">
+          Describe a constraint or a routing decision in plain English. BYOC turns it
+          into a hosted endpoint — yes/no, pick-one, or a score — that your chatbot or
+          agent can call before a generative model ever gets involved.
         </p>
-        <div className="flex gap-3">
-          <Link
-            href="/signup"
-            className="rounded-md bg-black px-5 py-2.5 text-sm font-medium text-white"
-          >
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Link href="/signup" className="btn btn-copper no-underline">
             Get started
           </Link>
-          <Link
-            href="/login"
-            className="rounded-md border border-gray-300 px-5 py-2.5 text-sm font-medium"
-          >
-            Log in
+          <Link href="/login" className="btn btn-ghost no-underline">
+            I already have an account
           </Link>
         </div>
 
-        <div className="mt-12 grid w-full grid-cols-1 gap-4 text-left sm:grid-cols-2">
-          {TEMPLATES.map((t) => (
-            <div key={t.name} className="rounded-lg border border-gray-200 p-4">
-              <h3 className="font-medium">{t.name}</h3>
-              <p className="mt-1 text-sm text-gray-500">{t.blurb}</p>
-            </div>
-          ))}
+        <div className="mt-14 overflow-hidden rounded-2xl border border-line bg-ink text-paper">
+          <div className="flex items-center justify-between border-b border-white/10 px-5 py-3 text-[0.7rem] uppercase tracking-[0.16em] text-paper/55">
+            <span>A shopping assistant, asked to write Python</span>
+            <span className="font-mono font-normal normal-case tracking-[0.02em] text-copper-soft">
+              needs_review · false
+            </span>
+          </div>
+          <pre className="tech-output overflow-x-auto px-5 py-4 text-paper/90">
+{`is_out_of_scope   true    0.88
+is_harmful        false   0.94`}
+          </pre>
         </div>
+
+        <section className="mt-16">
+          <p className="kicker">Four ways in</p>
+          <h2 className="display-section mt-2">Start from a decision, not a prompt.</h2>
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {TEMPLATES.map((t) => (
+              <div key={t.label} className="card p-5">
+                <p className="text-copper">{t.mark}</p>
+                <h3 className="display-card mt-2">{t.label}</h3>
+                <p className="copy mt-1 text-ink-mute">{t.blurb}</p>
+              </div>
+            ))}
+          </div>
+        </section>
       </main>
     </div>
   );
