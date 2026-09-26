@@ -1,24 +1,32 @@
 # BYOC — Build Your Own Classifier
 
-**Describe a classification decision in plain English. Get back a hosted API endpoint that makes it — in milliseconds, with a confidence score.**
+**Describe a classification decision in plain English. Get a hosted API that makes it — typed, fast, with a confidence score.**
 
-BYOC lets anyone turn a sentence like *"reject anything that isn't about our product"* into a real, callable, non-generative classifier — no ML expertise, no training data, no prompt-engineering a chat model and hoping it behaves. Under the hood, every decision is made by **[Jev](https://typesafe.ai)** (TypeSafe AI's "System One" model): a fast, typed, non-generative decision engine that answers exactly one of three question shapes — **yes/no**, **pick one**, or **ordered score** — and returns a calibrated confidence alongside it.
+[Live app](https://byoc-web.vercel.app) · [API](https://byoc-api-478981500431.us-central1.run.app/docs) · [GitHub](https://github.com/shashnkvats/BYOC)
 
-## The problem this solves
+BYOC turns a sentence like *“reject anything that isn’t about our product”* into a callable, **non-generative** classifier. No training data. No hoping a chat model stays in its lane. Every decision is made by **[Jev](https://typesafe.ai)** (TypeSafe AI’s System One): a typed decision engine that answers exactly one of three shapes — **yes/no**, **pick one**, or **ordered score** — and returns confidence next to the answer.
 
-Chatbots and agents built on generative LLMs are famously bad at staying in their lane. Amazon's Rufus shopping assistant, for example, has been shown answering questions completely outside its scope (writing code, giving recipes) because nothing is actually *checking* whether a request belongs to the assistant before the LLM tries to answer it.
+The workshop UI is on Vercel. The FastAPI runtime is on Cloud Run. Auth and data sit on Supabase with row-level security.
 
-BYOC exists to be that check — cheaply, reliably, and without needing another generative model in the loop:
+---
 
-- **Guardrails** — "Is this message in scope? Is it harmful?" before your chatbot ever sees it.
-- **Agent / skill routing** — "Which of my N specialist agents should handle this?"
-- **MCP / tool selection** — "Which tool from this dynamic list should run next?"
-- **Model routing** — "Does this need a cheap fast model or a powerful expensive one?"
+## Why this exists
 
-You describe the decision once in the builder UI, publish it, and you get back a URL + API key you can call from anywhere.
+Generative assistants are bad at staying in scope. A shopping bot will write Python if you ask, because nothing *checks* whether the request belongs to the product before the LLM starts talking.
+
+BYOC is that check. Cheap, auditable, and not another generative hop:
+
+| Starting point | Example decision |
+|---|---|
+| **Guardrail** | Is this message in scope? Is it harmful? |
+| **Agent / skill routing** | Which specialist agent should handle this? |
+| **MCP / tool selection** | Which tool from this list should run next? |
+| **Model routing** | Cheap-fast model, or the expensive one? |
+
+You walk a three-step wizard (template → name → questions), publish once, and get a URL plus an API key you can call from a bot, an agent, or a curl script.
 
 ```bash
-curl -X POST 'https://your-deployment/v1/classify/byoc_live_xxxxxxxx' \
+curl -X POST 'https://byoc-api-478981500431.us-central1.run.app/v1/classify/byoc_live_xxxxxxxx' \
   -H 'Content-Type: application/json' \
   -d '{"state": "Can you write me a Python script that scrapes competitor prices?"}'
 ```
@@ -42,120 +50,159 @@ curl -X POST 'https://your-deployment/v1/classify/byoc_live_xxxxxxxx' \
 }
 ```
 
-## Features
+Replace `byoc_live_xxxxxxxx` with a key from **Deploy** after you publish a classifier.
 
-- **Guided builder, not a prompt box.** Pick a template (guardrail, agent routing, tool routing, model routing, or start blank), then edit plain-English questions with typed options/levels and a per-question confidence threshold — no prompt engineering.
-- **Optional AI auto-draft.** Describe what you want in a paragraph and an LLM drafts the question set for you to review and edit. This is the *only* place a generative model is used at all — Jev itself never generates free text, so the guided form always works without it.
-- **Playground.** Test a classifier against sample input before publishing, see the raw answers, per-question confidence, and whether the response would be flagged `needs_review`.
-- **One-click publish.** Generates a live endpoint (`POST /v1/classify/{api_key}`) plus copy-pasteable curl / JavaScript / Python snippets. The raw key is shown exactly once; only its hash is stored.
-- **Confidence-aware by design.** Every answer carries (or is assigned) a confidence score, and each question has its own threshold — so callers get a `needs_review` signal instead of blindly trusting a low-confidence guess.
-- **Call logs.** Every classification call is recorded (truncated input excerpt, answers, confidence, latency) so you can audit and tune thresholds over time.
-- **No service-role key, anywhere.** See [Security model](#security-model) below.
+---
+
+## What you can do in the app
+
+- **Workshop, not a dashboard.** Your classifiers as an editorial list — name, type, last edited, live/draft — not analytics chrome.
+- **Three-step create.** Cards for the four starting points, then a name, then seeded questions. Create lands you back in the workshop.
+- **Question editor.** Numbered Noul / Choice / Score fields with plain-English instructions, typed criteria, and a per-question confidence threshold.
+- **Playground.** Run sample state before you publish. See answers, effective confidence, and `needs_review`.
+- **One-click publish.** Issues `POST /v1/classify/{api_key}` plus curl / JavaScript / Python snippets. The raw key is shown once; only a SHA-256 hash is stored.
+- **Call logs.** Truncated input, answers, confidence, latency — enough to tune thresholds.
+- **Optional AI auto-draft.** A paragraph can draft the question set for you to edit. That is the **only** generative call in the product. Leave `AI_GATEWAY_API_KEY` empty and the guided form still works.
+
+---
 
 ## Architecture
 
 ```mermaid
 flowchart LR
     subgraph Browser
-        UI["Next.js App Router UI<br/>(builder, playground, deploy, logs)"]
+        UI["Next.js workshop<br/>Vercel"]
     end
-    subgraph "Your infra"
+    subgraph Caller
         Bot["Your chatbot / agent"]
     end
     UI -- "Supabase session JWT" --> API
-    subgraph "FastAPI backend (local)"
-        API["/classifiers, /test, /publish,<br/>/logs, /ai/draft (owner-scoped)"]
-        Runtime["/v1/classify/:api_key<br/>(public runtime endpoint)"]
+    subgraph "Cloud Run"
+        API["/classifiers /test /publish<br/>/logs /ai/draft"]
+        Runtime["/v1/classify/:api_key"]
     end
     Bot -- "API key" --> Runtime
-    API -- "JWT-scoped client<br/>(RLS enforced)" --> DB[(Supabase Postgres)]
+    API -- "JWT-scoped client<br/>RLS enforced" --> DB[(Supabase Postgres)]
     Runtime -- "anon key +<br/>SECURITY DEFINER RPCs" --> DB
-    API -- "questions + input" --> Jev["Jev / TypeSafe AI<br/>api.typesafe.ai/v1/systemone"]
-    Runtime -- "questions + input" --> Jev
-    API -. "optional auto-draft only" .-> Gateway["AI Gateway<br/>(generative LLM)"]
+    API -- "questions + state" --> Jev["Jev / TypeSafe<br/>systemone"]
+    Runtime -- "questions + state" --> Jev
+    API -. "optional draft only" .-> Gateway["AI Gateway"]
 ```
 
-## Tech stack
-
-| Layer | Choice |
+| Layer | What’s running |
 |---|---|
-| Frontend | Next.js 16 (App Router, Server Actions), React 19, Tailwind CSS |
-| Backend | FastAPI (Python 3.12), managed with [`uv`](https://github.com/astral-sh/uv) |
-| Database / Auth | Supabase (Postgres + Auth + Row Level Security) |
+| Frontend | Next.js 16 App Router, React 19, Tailwind v4 — [byoc-web.vercel.app](https://byoc-web.vercel.app) |
+| Backend | FastAPI (Python 3.12, `uv`) — [Cloud Run](https://byoc-api-478981500431.us-central1.run.app/docs) |
+| Database / Auth | Supabase Postgres + Auth + RLS. **No service-role key anywhere.** |
 | Decision engine | [Jev](https://typesafe.ai) via `api.typesafe.ai/v1/systemone` |
-| Optional AI assist | Any OpenAI-compatible chat completions endpoint (e.g. Vercel AI Gateway) |
+| Optional draft | OpenAI-compatible chat completions (e.g. Vercel AI Gateway) |
+
+---
 
 ## Security model
 
-This backend **never holds a Supabase service-role key**. Instead:
+The API **never holds a Supabase service-role key**.
 
-- **Authenticated endpoints** (`/classifiers`, `/test`, `/publish`, `/logs`, `/ai/draft`) verify the caller's Supabase session JWT and build a *per-request* Postgres client scoped to that JWT, so Row Level Security enforces `owner_id = auth.uid()` exactly as it would for a direct browser client. There is no backend-side bypass of RLS.
-- **The public runtime endpoint** (`/v1/classify/{api_key}`) has no user session at all — the classifier's own API key *is* the credential. It's resolved via two `SECURITY DEFINER` Postgres functions (`load_classifier_by_key`, `record_classification_log`, see [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql)) callable with only the anon key. Raw API keys are never stored — only a SHA-256 hash.
+- **Owner routes** (`/classifiers`, `/test`, `/publish`, `/logs`, `/ai/draft`) verify the Supabase session JWT and open a *per-request* Postgres client scoped to that JWT. RLS enforces `owner_id = auth.uid()` the same way a browser client would. There is no backend bypass.
+- **Public runtime** (`/v1/classify/{api_key}`) has no user session. The classifier’s API key *is* the credential. It is resolved through `SECURITY DEFINER` functions (`load_classifier_by_key`, `record_classification_log` in [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql)) using only the publishable/anon key.
+- Raw keys are never stored — SHA-256 only.
 
-## Project structure
+---
+
+## Repository
 
 ```
 BYOC/
-├── src/                          # Next.js app (App Router)
+├── src/                         # Next.js App Router
 │   ├── app/
-│   │   ├── (app)/                # authenticated: dashboard, classifier builder, playground, deploy, logs
-│   │   ├── login/, signup/       # auth pages
-│   │   └── page.tsx              # public landing page
-│   ├── components/                # QuestionEditor, AppNav
-│   ├── lib/                       # api-client, Supabase clients, types, auth Server Actions
-│   └── proxy.ts                   # Next 16's renamed middleware - route protection + session refresh
-├── backend/                       # FastAPI backend
+│   │   ├── (app)/               # workshop, create wizard, editor, playground, deploy, logs
+│   │   ├── login/ signup/
+│   │   └── page.tsx             # public landing
+│   ├── components/
+│   ├── lib/                     # api-client, Supabase, templates, types
+│   └── proxy.ts                 # Next 16 session + route protection
+├── backend/
+│   ├── Dockerfile               # Cloud Run image
 │   ├── app/
-│   │   ├── routers/                # classifiers, test, publish, classify, logs, draft_ai
-│   │   ├── jev_client.py           # httpx wrapper over Jev's systemone endpoint + token budget checks
-│   │   ├── security.py             # API key hashing, confidence/flag computation
-│   │   ├── templates.py            # starter question sets per classifier template
-│   │   └── deps.py                 # JWT verification, per-request RLS-scoped Postgres clients
+│   │   ├── routers/             # classifiers, test, publish, classify, logs, draft_ai
+│   │   ├── jev_client.py
+│   │   ├── security.py          # key hashing, confidence, needs_review
+│   │   ├── templates.py
+│   │   └── deps.py              # JWT + RLS-scoped Postgres
 │   └── pyproject.toml
-└── supabase/migrations/            # schema, RLS policies, SECURITY DEFINER RPCs
+└── supabase/migrations/         # schema, RLS, SECURITY DEFINER RPCs
 ```
 
-## Getting started
+---
 
-### Prerequisites
+## Run it locally
 
-- Node.js 20+
-- Python 3.12+ and [`uv`](https://github.com/astral-sh/uv)
-- A [Supabase](https://supabase.com) project (free tier is fine)
-- A [Jev / TypeSafe AI](https://typesafe.ai) API key
+You need Node 20+, Python 3.12, [`uv`](https://github.com/astral-sh/uv), a Supabase project, and a [TypeSafe / Jev](https://typesafe.ai) API key.
 
-### 1. Set up the database
+**1. Database.** Run [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql) on the project (SQL editor or CLI).
 
-Run the migration in [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql) against your Supabase project (via the Supabase SQL editor, the CLI, or the MCP server).
-
-### 2. Configure and run the backend
+**2. Backend**
 
 ```bash
 cd backend
 cp .env.example .env
-# fill in SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, TYPESAFE_API_KEY
+# SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, TYPESAFE_API_KEY
 uv sync
-uv run uvicorn app.main:app --reload --port 8001
+uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
 ```
 
-### 3. Configure and run the frontend
+Docs: [http://127.0.0.1:8001/docs](http://127.0.0.1:8001/docs)
+
+**3. Frontend**
 
 ```bash
 cp .env.example .env.local
-# fill in NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+# NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+# NEXT_PUBLIC_API_URL=http://127.0.0.1:8001
 npm install
-npm run dev
+npm run dev -- --hostname 127.0.0.1 --port 3001
 ```
 
-Open `http://localhost:3000`, sign up, and build your first classifier.
+Open [http://127.0.0.1:3001](http://127.0.0.1:3001), sign up, create a classifier.
 
-## Design notes on working with Jev
+If you bind the API to `127.0.0.1:8001` and something else is already listening on `*:8001` (Docker IPv6 is a common culprit), the local Next app will miss it. Use the host bind above.
 
-- Jev only answers **Noul** (yes/no), **Choice** (pick one of N), or **Score** (ordered scale) questions — never free text. One narrow question per field works far better than one compound question.
-- There's a combined ~64k token budget across the input state and all questions (~32k for the state alone); the backend checks this and returns warnings.
-- Noul answers don't carry a native confidence score, so BYOC derives a pseudo-confidence as `abs(probability - 0.5) * 2`; Choice/Score use Jev's own `confidence` field directly.
-- Jev is not built for arithmetic or date reasoning — keep questions to judgment/classification, not calculation.
+---
+
+## Production
+
+| Piece | Where |
+|---|---|
+| UI | Vercel project `byoc-web` — `NEXT_PUBLIC_SUPABASE_*` and `NEXT_PUBLIC_API_URL` pointing at Cloud Run |
+| API | GCP project `byoc-classifier`, Cloud Run service `byoc-api`, `us-central1` |
+| CORS | `FRONTEND_ORIGIN` includes `https://byoc-web.vercel.app` |
+
+The backend image is `backend/Dockerfile`. Redeploy after changing env:
+
+```bash
+cd backend
+gcloud run deploy byoc-api \
+  --project=byoc-classifier \
+  --source . \
+  --region=us-central1 \
+  --allow-unauthenticated
+```
+
+`TYPESAFE_API_KEY` must be set on the Cloud Run service for playground and `/v1/classify` to reach Jev. `AI_GATEWAY_API_KEY` is optional.
+
+In Supabase Auth, allow `https://byoc-web.vercel.app` (and `https://byoc-web.vercel.app/**`) as a redirect URL.
+
+---
+
+## Working with Jev
+
+- Only **Noul** (yes/no), **Choice** (one of N), or **Score** (ordered scale). Never free text. One narrow question beats one compound question.
+- Combined budget is about 64k tokens for state + questions (~32k for state alone). The backend estimates and warns.
+- Noul has no native confidence; BYOC uses `abs(p − 0.5) × 2`. Choice and Score use Jev’s own `confidence`.
+- Jev is for judgment, not arithmetic or date math.
+
+---
 
 ## Status
 
-Local-first MVP: both apps are designed to run on your machine today. Everything (CRUD, templates, playground, publish/rotate keys, public runtime endpoint, logs, RLS, optional AI-assisted drafting) is implemented and smoke-tested end-to-end. Not yet done: a hosted/cloud deployment path (Vercel + a hosted FastAPI target).
+Hosted end-to-end: workshop on Vercel, classify API on Cloud Run, data and auth on Supabase. Local `uv` / `next dev` still works for development. Optional LLM auto-draft stays off until `AI_GATEWAY_API_KEY` is set.
