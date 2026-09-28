@@ -19,6 +19,29 @@ export function exampleFlagLabel(value: string): string {
   return isValidFlagKey(value) ? value.trim().toUpperCase() : "YOUR_FLAG";
 }
 
+const FLAG_FILLER =
+  /\b(guardrail|detector|classifier|checker|filter|model|content)\b/gi;
+
+/** Concise snake_case API key from the Step 2 name. Editable by the user. */
+export function suggestFlagKey(name: string): string {
+  const raw = name.trim();
+  if (!raw) return "is_out_of_scope";
+
+  const stripped = raw
+    .replace(FLAG_FILLER, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const phrase = (stripped || raw).toLowerCase();
+  let slug = phrase
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .replace(/_+/g, "_");
+
+  if (!slug) return "is_out_of_scope";
+  if (!slug.startsWith("is_")) slug = `is_${slug}`;
+  return slug.slice(0, FLAG_KEY_MAX);
+}
+
 /** Heading for the configure card, derived from the Step 2 name. */
 export function guardrailCheckTitle(name: string): string {
   const raw = name.trim();
@@ -53,7 +76,7 @@ export function briefToYesNoQuestion(brief: string): string {
   return `Does this message involve the following: ${text}?`;
 }
 
-/** One Noul question. Key is left empty — the user must name the flag. */
+/** One Noul question. Flag name is suggested from the classifier name. */
 export function seedGuardrailQuestion(opts: {
   name?: string;
   description?: string;
@@ -62,7 +85,7 @@ export function seedGuardrailQuestion(opts: {
   const instructions = briefToYesNoQuestion(description);
 
   return {
-    key: "",
+    key: suggestFlagKey(opts.name ?? ""),
     type: "noul",
     instructions,
     criteria: {

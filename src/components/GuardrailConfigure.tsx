@@ -92,11 +92,15 @@ export function GuardrailConfigure({
                   {exampleFlagLabel(question.key)}
                 </span>
               </div>
-              <pre className="tech-output px-4 pb-1.5 pt-3.5 text-paper/90">{`yes    0.88
-no     0.12`}</pre>
-              <p className="px-4 pb-3.5 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-paper/40">
-                Example
-              </p>
+              <pre className="tech-output flex items-baseline justify-between gap-4 px-4 py-3.5 text-paper/90">
+                <span className="uppercase">YES</span>
+                <span className="inline-flex items-baseline gap-[0.65rem]">
+                  <span className="text-[0.68rem] tracking-[0.04em] text-paper/40">
+                    score
+                  </span>
+                  <span>0.97</span>
+                </span>
+              </pre>
             </div>
           </article>
 
@@ -124,8 +128,8 @@ no     0.12`}</pre>
         <aside className="card p-4 lg:sticky lg:top-[5.5rem]">
           <p className="kicker">How it works</p>
           <p className="mt-2 text-[0.82rem] leading-[1.5] text-ink-mute">
-            Jev returns a yes/no score for every message before your chatbot replies.
-            You define the question and the response key.
+            Jev returns a yes/no decision with a score for every message before your chatbot
+            replies. You define the question and the response key.
           </p>
         </aside>
       </div>

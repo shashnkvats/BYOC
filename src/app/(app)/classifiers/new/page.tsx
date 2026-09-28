@@ -12,6 +12,7 @@ import {
   briefToYesNoQuestion,
   isValidFlagKey,
   seedGuardrailQuestion,
+  suggestFlagKey,
 } from "@/lib/guardrail-seed";
 import {
   editableToQuestionIn,
@@ -293,7 +294,7 @@ function WriteQuestions({
           <WizardHeader
             current={3}
             template={template}
-            lede="Set the question and the flag name. Jev returns yes or no, each with a score — this is the last step."
+            lede="Set the question and the flag name. Jev returns a yes/no decision with a score — this is the last step."
           />
         }
         name={name}
@@ -388,6 +389,7 @@ function NewClassifierWizard() {
   const [questions, setQuestions] = useState<EditableQuestion[]>([]);
   const seededFor = useRef<TemplateType | null>(null);
   const lastGuardrailBrief = useRef("");
+  const lastGuardrailFlag = useRef(suggestFlagKey(""));
 
   useEffect(() => {
     if (!template) {
@@ -396,6 +398,8 @@ function NewClassifierWizard() {
     }
     if (seededFor.current === template) return;
     if (template === "guardrail") {
+      lastGuardrailBrief.current = "";
+      lastGuardrailFlag.current = suggestFlagKey("");
       setQuestions([questionInToEditable(seedGuardrailQuestion({ name: "", description: "" }))]);
     } else {
       setQuestions(TEMPLATE_QUESTIONS[template].map(questionInToEditable));
@@ -435,13 +439,29 @@ function NewClassifierWizard() {
             );
             const previousAuto = briefToYesNoQuestion(lastGuardrailBrief.current);
             lastGuardrailBrief.current = description;
-            if (!current) return [seeded];
-            const customized =
-              current.key.trim().length > 0 ||
-              (current.instructions.trim() !== previousAuto.trim() &&
-                current.instructions.trim() !== briefToYesNoQuestion("").trim());
-            if (customized) return prev;
-            return [{ ...seeded, uid: current.uid }];
+            if (!current) {
+              lastGuardrailFlag.current = seeded.key;
+              return [seeded];
+            }
+            const flagCustomized = current.key.trim() !== lastGuardrailFlag.current;
+            const instructionsCustomized =
+              current.instructions.trim() !== previousAuto.trim() &&
+              current.instructions.trim() !== briefToYesNoQuestion("").trim();
+            if (!flagCustomized) lastGuardrailFlag.current = seeded.key;
+            if (flagCustomized && instructionsCustomized) return prev;
+            return [
+              {
+                ...seeded,
+                uid: current.uid,
+                key: flagCustomized ? current.key : seeded.key,
+                instructions: instructionsCustomized
+                  ? current.instructions
+                  : seeded.instructions,
+                choicePairs: instructionsCustomized
+                  ? current.choicePairs
+                  : seeded.choicePairs,
+              },
+            ];
           });
         }
         router.push(`/classifiers/new?from=${template}&step=questions`);
