@@ -302,9 +302,13 @@
         color: rgba(243, 238, 228, 0.55);
       }
 
-      .sample pre {
+      .sample-out {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
         margin: 0;
-        padding: 0.9rem 1rem 0.35rem;
+        padding: 0.9rem 1rem;
         font-family: "IBM Plex Mono", monospace;
         font-size: 0.84rem;
         letter-spacing: 0.02em;
@@ -312,13 +316,19 @@
         color: rgba(243, 238, 228, 0.9);
       }
 
-      .sample-caption {
-        margin: 0;
-        padding: 0 1rem 0.85rem;
-        font-size: 0.68rem;
-        font-weight: 600;
-        letter-spacing: 0.16em;
+      .sample-out .decision {
         text-transform: uppercase;
+      }
+
+      .sample-out .score {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 0.65rem;
+      }
+
+      .sample-out .score-label {
+        font-size: 0.68rem;
+        letter-spacing: 0.04em;
         color: rgba(243, 238, 228, 0.4);
       }
 
@@ -418,7 +428,7 @@
       <p class="kicker">New work</p>
       <h1>New classifier</h1>
       <p class="lede">
-        Set the question and the flag name. Jev returns yes or no, each with a
+        Set the question and the flag name. Jev returns a yes/no decision with a
         score — this is the last step.
       </p>
       <ol class="steps">
@@ -454,7 +464,7 @@
               id="flag-name"
               type="text"
               name="flag_key"
-              value=""
+              value="is_prompt_injection"
               required
               aria-required="true"
               minlength="1"
@@ -469,16 +479,14 @@
             <div class="sample">
               <div class="sample-bar">
                 <span>Example response</span>
-                <span class="copper" id="sample-key">YOUR_FLAG</span>
+                <span class="copper" id="sample-key">IS_PROMPT_INJECTION</span>
               </div>
-              <pre id="sample-out">yes    0.88
-no     0.12</pre>
-              <p class="sample-caption">Example</p>
+              <pre class="sample-out" id="sample-out"><span class="decision">YES</span><span class="score"><span class="score-label">score</span><span>0.97</span></span></pre>
             </div>
           </article>
 
           <div class="actions">
-            <button class="btn btn-copper" id="create" type="button" disabled>Create guardrail</button>
+            <button class="btn btn-copper" id="create" type="button">Create guardrail</button>
             <a class="back" href="#">← Back</a>
           </div>
         </div>
@@ -486,8 +494,8 @@ no     0.12</pre>
         <aside class="help">
           <p class="kicker">How it works</p>
           <p>
-            Jev returns a yes/no score for every message before your chatbot
-            replies. You define the question and the response key.
+            Jev returns a yes/no decision with a score for every message before
+            your chatbot replies. You define the question and the response key.
           </p>
         </aside>
       </div>
