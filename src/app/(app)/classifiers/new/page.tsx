@@ -4,8 +4,14 @@ import { ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
+import { GuardrailConfigure } from "@/components/GuardrailConfigure";
 import { EditableQuestion, QuestionEditor } from "@/components/QuestionEditor";
 import { api, ApiError } from "@/lib/api-client";
+import {
+  briefToYesNoQuestion,
+  isValidFlagKey,
+  seedGuardrailQuestion,
+} from "@/lib/guardrail-seed";
 import {
   editableToQuestionIn,
   makeBlankEditable,
@@ -38,7 +44,7 @@ function WizardSteps({
       label: "Name it",
       href: template ? `/classifiers/new?from=${template}` : undefined,
     },
-    { n: 3 as const, label: "Questions" },
+    { n: 3 as const, label: template === "guardrail" ? "Configure" : "Questions" },
   ];
 
   return (
@@ -245,6 +251,13 @@ function WriteQuestions({
       setError("Go back and give your classifier a name.");
       return;
     }
+    if (template === "guardrail") {
+      const q = questions[0];
+      if (!q || !q.instructions.trim() || !isValidFlagKey(q.key)) {
+        setError("Add a yes/no question and a flag name.");
+        return;
+      }
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -261,6 +274,30 @@ function WriteQuestions({
     }
   }
 
+  if (template === "guardrail") {
+    const question = questions[0] ?? questionInToEditable(seedGuardrailQuestion({ name, description }));
+    return (
+      <GuardrailConfigure
+        header={
+          <WizardHeader
+            current={3}
+            template={template}
+            lede="Set the question and the flag name. Jev returns yes or no, each with a score — this is the last step."
+          />
+        }
+        name={name}
+        question={question}
+        onQuestion={(next) => {
+          if (questions.length === 0) onQuestions([next]);
+          else onQuestions(questions.map((q, i) => (i === 0 ? next : q)));
+        }}
+        error={error}
+        submitting={submitting}
+        onCreate={handleCreate}
+      />
+    );
+  }
+
   return (
     <div className="mx-auto max-w-3xl">
       <WizardHeader
@@ -274,6 +311,9 @@ function WriteQuestions({
           <div>
             <p className="kicker">The questions</p>
             <h2 className="display-section mt-1">What Jev should decide</h2>
+            <p className="mt-2 max-w-md text-[0.88rem] leading-5 text-ink-mute">
+              Each card is one Jev question — a yes/no, a pick-one, or a score.
+            </p>
           </div>
           <button
             type="button"
@@ -336,6 +376,7 @@ function NewClassifierWizard() {
   const [description, setDescription] = useState("");
   const [questions, setQuestions] = useState<EditableQuestion[]>([]);
   const seededFor = useRef<TemplateType | null>(null);
+  const lastGuardrailBrief = useRef("");
 
   useEffect(() => {
     if (!template) {
@@ -343,7 +384,11 @@ function NewClassifierWizard() {
       return;
     }
     if (seededFor.current === template) return;
-    setQuestions(TEMPLATE_QUESTIONS[template].map(questionInToEditable));
+    if (template === "guardrail") {
+      setQuestions([questionInToEditable(seedGuardrailQuestion({ name: "", description: "" }))]);
+    } else {
+      setQuestions(TEMPLATE_QUESTIONS[template].map(questionInToEditable));
+    }
     seededFor.current = template;
   }, [template]);
 
@@ -370,9 +415,26 @@ function NewClassifierWizard() {
       description={description}
       onName={setName}
       onDescription={setDescription}
-      onContinue={() =>
-        router.push(`/classifiers/new?from=${template}&step=questions`)
-      }
+      onContinue={() => {
+        if (template === "guardrail") {
+          setQuestions((prev) => {
+            const current = prev[0];
+            const seeded = questionInToEditable(
+              seedGuardrailQuestion({ name, description }),
+            );
+            const previousAuto = briefToYesNoQuestion(lastGuardrailBrief.current);
+            lastGuardrailBrief.current = description;
+            if (!current) return [seeded];
+            const customized =
+              current.key.trim().length > 0 ||
+              (current.instructions.trim() !== previousAuto.trim() &&
+                current.instructions.trim() !== briefToYesNoQuestion("").trim());
+            if (customized) return prev;
+            return [{ ...seeded, uid: current.uid }];
+          });
+        }
+        router.push(`/classifiers/new?from=${template}&step=questions`);
+      }}
     />
   );
 }
