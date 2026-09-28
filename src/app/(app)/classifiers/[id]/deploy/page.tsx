@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ClassifierPageHeader } from "@/components/ui";
 import { api, ApiError } from "@/lib/api-client";
+import { readPublishHandoff } from "@/lib/publish-handoff";
 import { TemplateTypeHint } from "@/lib/templates";
 import type { ClassifierOut } from "@/lib/types";
 
@@ -20,6 +21,11 @@ export default function DeployPage() {
   const [publishing, setPublishing] = useState(false);
 
   useEffect(() => {
+    const handoff = readPublishHandoff(id);
+    if (handoff) {
+      setApiKey(handoff.api_key);
+      setEndpointPath(handoff.endpoint_path);
+    }
     api.getClassifier(id).then(setClassifier).catch(() => undefined);
   }, [id]);
 
@@ -101,10 +107,19 @@ export default function DeployPage() {
 
       {apiKey && (
         <div className="flex flex-col gap-5">
-          <div className="rounded-2xl border border-amber/30 bg-amber-soft p-5">
-            <p className="text-sm font-medium text-amber">
-              Copy this API key now — it will not be shown again.
+          <div>
+            <p className="kicker">On the wire</p>
+            <h2 className="display-section mt-2">
+              Already <span className="font-editorial text-copper">live.</span>
+            </h2>
+            <p className="mt-2 max-w-md text-[15px] leading-6 text-ink-mute">
+              Copy the API key now — it will not be shown again. This is the
+              endpoint your app can call.
             </p>
+          </div>
+
+          <div className="rounded-2xl border border-amber/30 bg-amber-soft p-5">
+            <p className="text-sm font-medium text-amber">API key</p>
             <code className="mt-3 block break-all rounded-xl bg-paper-raised p-3 font-mono text-sm">
               {apiKey}
             </code>

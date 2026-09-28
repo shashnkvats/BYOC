@@ -85,7 +85,11 @@ export default function DashboardPage() {
             return (
               <li key={c.id}>
                 <Link
-                  href={`/classifiers/${c.id}/edit`}
+                  href={
+                    c.status === "published"
+                      ? `/classifiers/${c.id}/deploy`
+                      : `/classifiers/${c.id}/edit`
+                  }
                   className="workshop-row group card flex items-center gap-4 px-5 py-4 no-underline"
                 >
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-copper-soft text-copper">

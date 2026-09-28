@@ -109,7 +109,7 @@ no     0.12`}</pre>
               disabled={!canCreate}
               className="btn btn-copper w-fit text-[14px] font-semibold"
             >
-              {submitting ? "Creating..." : "Create guardrail"}
+              {submitting ? "Going live..." : "Create guardrail"}
             </button>
             <Link
               href="/classifiers/new?from=guardrail"

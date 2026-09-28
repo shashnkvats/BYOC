@@ -7,6 +7,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { GuardrailConfigure } from "@/components/GuardrailConfigure";
 import { EditableQuestion, QuestionEditor } from "@/components/QuestionEditor";
 import { api, ApiError } from "@/lib/api-client";
+import { stashPublishHandoff } from "@/lib/publish-handoff";
 import {
   briefToYesNoQuestion,
   isValidFlagKey,
@@ -261,13 +262,23 @@ function WriteQuestions({
     setSubmitting(true);
     setError(null);
     try {
-      await api.createClassifier({
+      const created = await api.createClassifier({
         name: name.trim(),
         description: description.trim() || null,
         template_type: template,
         questions: questions.map(editableToQuestionIn),
       });
-      router.push("/dashboard");
+      if (created.questions.length === 0) {
+        router.push(`/classifiers/${created.id}/edit`);
+        return;
+      }
+      try {
+        const published = await api.publishClassifier(created.id);
+        stashPublishHandoff(created.id, published);
+      } catch {
+        // Classifier exists; Deploy still has Publish if this step fails.
+      }
+      router.push(`/classifiers/${created.id}/deploy`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to create classifier");
       setSubmitting(false);
@@ -350,7 +361,7 @@ function WriteQuestions({
             disabled={submitting}
             className="btn btn-copper w-fit text-[14px] font-semibold"
           >
-            {submitting ? "Creating..." : "Create"}
+            {submitting ? "Going live..." : "Create"}
           </button>
           <Link
             href={`/classifiers/new?from=${template}`}
