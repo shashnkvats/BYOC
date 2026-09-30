@@ -57,8 +57,8 @@ export const TEMPLATE_QUESTIONS: Record<TemplateType, QuestionIn[]> = {
       type: "choice",
       instructions: "Which model is the best fit for this request?",
       criteria: {
-        fast_cheap_model: "Simple requests, low latency/cost priority",
-        powerful_model: "Complex reasoning, high-stakes accuracy",
+        fast_model: "Simple, routine, low-complexity requests",
+        powerful_model: "Complex reasoning, coding, or high-stakes requests",
       },
       confidence_threshold: 0.6,
     },

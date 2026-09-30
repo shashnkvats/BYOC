@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BYOC — Model Router Configure</title>
+<style>
+:root{
+  --paper:#f3eee4; --card:#fffaf2; --field:#f5f0e7; --ink:#1c1914;
+  --muted:#6b6458; --line:#d8cfc0; --copper:#c45c26; --soft:#f3ddc8;
+  --dark:#1c1914; --green:#52725c;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:15px;line-height:1.45;
+}
+header{border-bottom:1px solid var(--line);height:70px;display:flex;align-items:center}
+.nav{width:min(1000px,calc(100% - 40px));margin:auto;display:flex;justify-content:space-between;align-items:center}
+.brand{display:flex;gap:10px;align-items:center;font-family:Georgia,serif;font-size:22px;font-weight:700}
+.mark{width:34px;height:34px;border:2px solid var(--ink);border-radius:5px;display:grid;place-items:center;position:relative}
+.mark:after{content:"";width:5px;height:5px;border-radius:50%;background:var(--copper);position:absolute;right:4px;top:4px}
+.account{display:flex;gap:10px;align-items:center}.avatar{width:38px;height:38px;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;background:var(--card)}
+.btn{border:1px solid var(--line);border-radius:999px;background:transparent;padding:9px 17px;font-weight:600;color:var(--ink)}
+main{width:min(900px,calc(100% - 40px));margin:42px auto 80px}
+.kicker{color:var(--copper);font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase}
+h1,h2{font-family:Georgia,serif;font-weight:500;letter-spacing:-.025em}
+h1{font-size:38px;margin:6px 0 6px}.lede{color:var(--muted);margin:0;max-width:650px}
+.steps{display:flex;gap:22px;align-items:center;margin:28px 0 30px;color:var(--muted)}
+.steps span{display:flex;gap:8px;align-items:center}.steps i{width:28px;height:1px;background:var(--line)}.steps .active{color:var(--ink);font-weight:650}.steps b{font-family:monospace;font-size:12px;font-weight:500}.steps .active b{color:var(--copper)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px;box-shadow:0 1px 0 rgba(28,25,20,.03)}
+.section-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}
+.section-head h2{font-size:26px;margin:3px 0}.section-head p{color:var(--muted);margin:0;max-width:590px}
+.field{margin-top:23px}.label{display:block;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+input,textarea{width:100%;border:1px solid var(--line);border-radius:12px;background:var(--field);padding:13px 15px;font:inherit;color:var(--ink);outline:none}
+textarea{resize:vertical;min-height:86px}input:focus,textarea:focus{border-color:var(--copper);box-shadow:0 0 0 3px var(--soft)}
+.models{display:grid;gap:10px;margin-top:9px}
+.model{display:grid;grid-template-columns:1fr 1.35fr auto;gap:10px;align-items:center}
+.model input{margin:0}.icon-btn{border:0;background:transparent;color:var(--muted);font-size:20px;padding:8px;cursor:pointer}
+.add{margin-top:10px;border:0;background:none;color:var(--copper);font-weight:650;padding:0;cursor:pointer}
+.hint{font-size:13px;color:var(--muted);margin:8px 0 0}
+.divider{height:1px;background:var(--line);margin:25px 0}
+.example{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.example-box{border:1px solid var(--line);border-radius:14px;padding:17px;background:#fbf7ef}
+.example-box .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.15em;color:var(--muted);font-weight:700}
+.example-box p{margin:8px 0 0}.result{background:var(--dark);color:#f8f0e6;border-radius:14px;padding:17px}
+.result .top{display:flex;justify-content:space-between;color:#bdb5aa;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.result .route{margin-top:18px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px}
+.route strong{color:#f3b98e}.score{float:right;color:#ddd4c9}
+.actions{display:flex;gap:15px;align-items:center;margin-top:20px}.primary{background:var(--copper);color:white;border:0}.back{color:var(--muted);text-decoration:none}
+.note{margin-top:18px;border-left:3px solid var(--copper);padding:2px 0 2px 13px;color:var(--muted);font-size:13px}
+@media(max-width:700px){.model{grid-template-columns:1fr}.example{grid-template-columns:1fr}.steps{gap:10px;flex-wrap:wrap}.steps i{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="nav">
+    <div class="brand"><div class="mark">B</div>BYOC</div>
+    <div class="account"><div class="avatar">S</div><button class="btn">Log out</button></div>
+  </div>
+</header>
+
+<main>
+  <div class="kicker">New work</div>
+  <h1>Model router</h1>
+  <p class="lede">Define the routing decision. Jev will choose the best destination from the models you make available.</p>
+
+  <div class="steps">
+    <span><b>01</b> Choose a start</span><i></i>
+    <span><b>02</b> Name it</span><i></i>
+    <span class="active"><b>03</b> Configure</span>
+  </div>
+
+  <section class="card">
+    <div class="section-head">
+      <div>
+        <div class="kicker">Routing decision</div>
+        <h2>Where should this request go?</h2>
+        <p>Give Jev one clear question and the model choices it can return. Keep provider-specific execution logic outside the classifier.</p>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="label">The question Jev should answer</label>
+      <textarea>Which model is the best fit for this request?</textarea>
+      <p class="hint">Jev will evaluate this question against the incoming request and pick exactly one route.</p>
+    </div>
+
+    <div class="field">
+      <label class="label">Response key</label>
+      <input value="target_model">
+      <p class="hint">The field your application reads from the API response.</p>
+    </div>
+
+    <div class="field">
+      <label class="label">Available routes</label>
+      <div class="models" id="models">
+        <div class="model">
+          <input value="fast_model" aria-label="route key">
+          <input value="Simple, routine, low-complexity requests" aria-label="when to choose">
+          <button class="icon-btn" title="Remove">×</button>
+        </div>
+        <div class="model">
+          <input value="powerful_model" aria-label="route key">
+          <input value="Complex reasoning, coding, or high-stakes requests" aria-label="when to choose">
+          <button class="icon-btn" title="Remove">×</button>
+        </div>
+      </div>
+      <button class="add" id="add">+ Add route</button>
+      <p class="hint">Route key on the left; a short semantic description on the right. The description gives Jev the context it needs to choose.</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="example">
+      <div class="example-box">
+        <div class="eyebrow">Example request</div>
+        <p>“Summarize this support ticket in three bullets.”</p>
+      </div>
+      <div class="result">
+        <div class="top"><span>Example response</span><span>target_model</span></div>
+        <div class="route"><strong>fast_model</strong><span class="score">score&nbsp; 0.94</span></div>
+      </div>
+    </div>
+
+    <div class="note">No confidence slider here. The router's job is to return the best route plus its score; your application can decide what to do with low-confidence results.</div>
+  </section>
+
+  <div class="actions">
+    <button class="btn primary">Create router</button>
+    <a class="back" href="#">← Back</a>
+  </div>
+</main>
+
+<script>
+const models=document.getElementById('models');
+document.getElementById('add').onclick=()=>{
+  const row=document.createElement('div'); row.className='model';
+  row.innerHTML='<input placeholder="route_key" aria-label="route key"><input placeholder="When should Jev choose this route?" aria-label="when to choose"><button class="icon-btn" title="Remove">×</button>';
+  models.appendChild(row);
+};
+models.addEventListener('click',e=>{
+  if(e.target.classList.contains('icon-btn') && models.children.length>2) e.target.parentElement.remove();
+});
+</script>
+</body>
+</html>

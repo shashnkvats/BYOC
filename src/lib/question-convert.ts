@@ -4,7 +4,7 @@ import type { QuestionIn, QuestionOut } from "./types";
 let uidCounter = 0;
 function nextUid() {
   uidCounter += 1;
-  return `q_${Date.now()}_${uidCounter}`;
+  return `q_${uidCounter}`;
 }
 
 export function questionOutToEditable(q: QuestionOut): EditableQuestion {

@@ -5,6 +5,10 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { GuardrailConfigure } from "@/components/GuardrailConfigure";
+import {
+  isValidModelRouter,
+  ModelRouterConfigure,
+} from "@/components/ModelRouterConfigure";
 import { EditableQuestion, QuestionEditor } from "@/components/QuestionEditor";
 import { api, ApiError } from "@/lib/api-client";
 import { stashPublishHandoff } from "@/lib/publish-handoff";
@@ -46,7 +50,10 @@ function WizardSteps({
       label: "Name it",
       href: template ? `/classifiers/new?from=${template}` : undefined,
     },
-    { n: 3 as const, label: template === "guardrail" ? "Configure" : "Questions" },
+    {
+      n: 3 as const,
+      label: template === "guardrail" || template === "model_routing" ? "Configure" : "Questions",
+    },
   ];
 
   return (
@@ -94,15 +101,17 @@ function WizardHeader({
   current,
   template,
   lede,
+  title = "New classifier",
 }: {
   current: 1 | 2 | 3;
   template?: TemplateType;
   lede: string;
+  title?: string;
 }) {
   return (
     <>
       <p className="kicker">New work</p>
-      <h1 className="display-page mt-1">New classifier</h1>
+      <h1 className="display-page mt-1">{title}</h1>
       <p className="mt-2.5 max-w-lg text-[15px] font-normal leading-6 text-ink-mute">
         {lede}
       </p>
@@ -260,6 +269,13 @@ function WriteQuestions({
         return;
       }
     }
+    if (template === "model_routing") {
+      const q = questions[0];
+      if (!q || !isValidModelRouter(q)) {
+        setError("Add a question, a response key, and at least two named routes.");
+        return;
+      }
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -286,6 +302,11 @@ function WriteQuestions({
     }
   }
 
+  function setFirstQuestion(next: EditableQuestion) {
+    if (questions.length === 0) onQuestions([next]);
+    else onQuestions(questions.map((q, i) => (i === 0 ? next : q)));
+  }
+
   if (template === "guardrail") {
     const question = questions[0] ?? questionInToEditable(seedGuardrailQuestion({ name, description }));
     return (
@@ -299,10 +320,29 @@ function WriteQuestions({
         }
         name={name}
         question={question}
-        onQuestion={(next) => {
-          if (questions.length === 0) onQuestions([next]);
-          else onQuestions(questions.map((q, i) => (i === 0 ? next : q)));
-        }}
+        onQuestion={setFirstQuestion}
+        error={error}
+        submitting={submitting}
+        onCreate={handleCreate}
+      />
+    );
+  }
+
+  if (template === "model_routing") {
+    const question =
+      questions[0] ?? questionInToEditable(TEMPLATE_QUESTIONS.model_routing[0]);
+    return (
+      <ModelRouterConfigure
+        header={
+          <WizardHeader
+            current={3}
+            template={template}
+            title="Model router"
+            lede="Define the routing decision. Jev will choose the best destination from the models you make available."
+          />
+        }
+        question={question}
+        onQuestion={setFirstQuestion}
         error={error}
         submitting={submitting}
         onCreate={handleCreate}
