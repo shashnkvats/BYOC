@@ -6,6 +6,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { GuardrailConfigure } from "@/components/GuardrailConfigure";
 import {
+  isValidToolSelector,
+  McpToolSelectorConfigure,
+  seedMcpToolSelector,
+} from "@/components/McpToolSelectorConfigure";
+import {
   isValidModelRouter,
   ModelRouterConfigure,
 } from "@/components/ModelRouterConfigure";
@@ -52,7 +57,12 @@ function WizardSteps({
     },
     {
       n: 3 as const,
-      label: template === "guardrail" || template === "model_routing" ? "Configure" : "Questions",
+      label:
+        template === "guardrail" ||
+        template === "model_routing" ||
+        template === "mcp_tool_routing"
+          ? "Configure"
+          : "Questions",
     },
   ];
 
@@ -276,6 +286,13 @@ function WriteQuestions({
         return;
       }
     }
+    if (template === "mcp_tool_routing") {
+      const q = questions[0];
+      if (!q || !isValidToolSelector(q)) {
+        setError("Add a question, a response key, and at least two named tools.");
+        return;
+      }
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -339,6 +356,27 @@ function WriteQuestions({
             template={template}
             title="Model router"
             lede="Define the routing decision. Jev will choose the best destination from the models you make available."
+          />
+        }
+        question={question}
+        onQuestion={setFirstQuestion}
+        error={error}
+        submitting={submitting}
+        onCreate={handleCreate}
+      />
+    );
+  }
+
+  if (template === "mcp_tool_routing") {
+    const question = questions[0] ?? seedMcpToolSelector();
+    return (
+      <McpToolSelectorConfigure
+        header={
+          <WizardHeader
+            current={3}
+            template={template}
+            title="MCP tool selector"
+            lede="Teach Jev which tool should handle an incoming request."
           />
         }
         question={question}
@@ -441,6 +479,8 @@ function NewClassifierWizard() {
       lastGuardrailBrief.current = "";
       lastGuardrailFlag.current = suggestFlagKey("");
       setQuestions([questionInToEditable(seedGuardrailQuestion({ name: "", description: "" }))]);
+    } else if (template === "mcp_tool_routing") {
+      setQuestions([seedMcpToolSelector()]);
     } else {
       setQuestions(TEMPLATE_QUESTIONS[template].map(questionInToEditable));
     }

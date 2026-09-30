@@ -55,10 +55,10 @@ TEMPLATE_DEFAULTS: dict[str, list[QuestionIn]] = {
         QuestionIn(
             key="target_tool",
             type="choice",
-            instructions="Which tool should run next for this request?",
+            instructions="Which tool should handle this request?",
             criteria={
-                "tool_one": "Describe what this tool does and when to use it",
-                "tool_two": "Describe what this tool does and when to use it",
+                "search_web": "Search the web when the request requires current or external information.",
+                "get_weather": "Get current weather conditions or forecasts for a location.",
             },
             confidence_threshold=0.6,
         ),
