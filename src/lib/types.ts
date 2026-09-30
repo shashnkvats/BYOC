@@ -88,3 +88,18 @@ export interface DraftAIResponse {
   questions: QuestionIn[];
   note: string | null;
 }
+
+export type McpAuthType = "none" | "bearer" | "api_key";
+
+export interface McpDiscoveredTool {
+  name: string;
+  description: string;
+  input_schema: Record<string, unknown> | null;
+  server: string;
+}
+
+export interface McpDiscoverResponse {
+  server: string;
+  url: string;
+  tools: McpDiscoveredTool[];
+}

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { GuardrailConfigure } from "@/components/GuardrailConfigure";
+import { McpImportConnect } from "@/components/McpImportConnect";
+import { McpImportSelect } from "@/components/McpImportSelect";
 import {
   isValidToolSelector,
   McpToolSelectorConfigure,
@@ -16,13 +18,14 @@ import {
 } from "@/components/ModelRouterConfigure";
 import { EditableQuestion, QuestionEditor } from "@/components/QuestionEditor";
 import { api, ApiError } from "@/lib/api-client";
-import { stashPublishHandoff } from "@/lib/publish-handoff";
 import {
   briefToYesNoQuestion,
   isValidFlagKey,
   seedGuardrailQuestion,
   suggestFlagKey,
 } from "@/lib/guardrail-seed";
+import { mergeImportedTools } from "@/lib/mcp-import";
+import { stashPublishHandoff } from "@/lib/publish-handoff";
 import {
   editableToQuestionIn,
   makeBlankEditable,
@@ -30,7 +33,7 @@ import {
 } from "@/lib/question-convert";
 import { TEMPLATE_QUESTIONS } from "@/lib/template-questions";
 import { TEMPLATE_META, TemplateIcon } from "@/lib/templates";
-import type { TemplateType } from "@/lib/types";
+import type { McpDiscoverResponse, TemplateType } from "@/lib/types";
 
 const TEMPLATES = (Object.keys(TEMPLATE_META) as TemplateType[]).map((id) => ({
   id,
@@ -256,12 +259,14 @@ function WriteQuestions({
   description,
   questions,
   onQuestions,
+  onImportFromServer,
 }: {
   template: TemplateType;
   name: string;
   description: string;
   questions: EditableQuestion[];
   onQuestions: (next: EditableQuestion[]) => void;
+  onImportFromServer?: () => void;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -384,6 +389,7 @@ function WriteQuestions({
         error={error}
         submitting={submitting}
         onCreate={handleCreate}
+        onImportFromServer={onImportFromServer ?? (() => {})}
       />
     );
   }
@@ -465,6 +471,7 @@ function NewClassifierWizard() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [questions, setQuestions] = useState<EditableQuestion[]>([]);
+  const [discovered, setDiscovered] = useState<McpDiscoverResponse | null>(null);
   const seededFor = useRef<TemplateType | null>(null);
   const lastGuardrailBrief = useRef("");
   const lastGuardrailFlag = useRef(suggestFlagKey(""));
@@ -491,6 +498,51 @@ function NewClassifierWizard() {
     return <ChooseStart />;
   }
 
+  if (template === "mcp_tool_routing" && step === "mcp-import") {
+    return (
+      <McpImportConnect
+        onBack={() => router.push("/classifiers/new?from=mcp_tool_routing&step=questions")}
+        onDiscovered={(result) => {
+          setDiscovered(result);
+          router.push("/classifiers/new?from=mcp_tool_routing&step=mcp-select");
+        }}
+      />
+    );
+  }
+
+  if (template === "mcp_tool_routing" && step === "mcp-select") {
+    if (!discovered) {
+      return (
+        <McpImportConnect
+          onBack={() => router.push("/classifiers/new?from=mcp_tool_routing&step=questions")}
+          onDiscovered={(result) => {
+            setDiscovered(result);
+            router.push("/classifiers/new?from=mcp_tool_routing&step=mcp-select");
+          }}
+        />
+      );
+    }
+    return (
+      <McpImportSelect
+        discovery={discovered}
+        onBack={() => router.push("/classifiers/new?from=mcp_tool_routing&step=mcp-import")}
+        onCancel={() => router.push("/classifiers/new?from=mcp_tool_routing&step=questions")}
+        onImport={(tools) => {
+          setQuestions((prev) => {
+            const current = prev[0] ?? seedMcpToolSelector();
+            return [
+              {
+                ...current,
+                choicePairs: mergeImportedTools(current.choicePairs, tools),
+              },
+            ];
+          });
+          router.push("/classifiers/new?from=mcp_tool_routing&step=questions");
+        }}
+      />
+    );
+  }
+
   if (step === "questions") {
     return (
       <WriteQuestions
@@ -499,6 +551,9 @@ function NewClassifierWizard() {
         description={description}
         questions={questions}
         onQuestions={setQuestions}
+        onImportFromServer={() =>
+          router.push("/classifiers/new?from=mcp_tool_routing&step=mcp-import")
+        }
       />
     );
   }

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, SecretStr, field_validator
 
 QuestionType = Literal["choice", "score", "noul"]
 TemplateType = Literal[
@@ -140,3 +140,25 @@ class DraftAIRequest(BaseModel):
 class DraftAIResponse(BaseModel):
     questions: list[QuestionIn]
     note: str | None = None
+
+
+McpAuthType = Literal["none", "bearer", "api_key"]
+
+
+class McpDiscoverRequest(BaseModel):
+    url: str = Field(min_length=1, max_length=2048)
+    auth_type: McpAuthType = "bearer"
+    credential: SecretStr | None = None
+
+
+class McpDiscoveredTool(BaseModel):
+    name: str
+    description: str = ""
+    input_schema: dict[str, Any] | None = None
+    server: str
+
+
+class McpDiscoverResponse(BaseModel):
+    server: str
+    url: str
+    tools: list[McpDiscoveredTool]

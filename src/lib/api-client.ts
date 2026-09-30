@@ -6,6 +6,8 @@ import type {
   ClassifierSummary,
   DraftAIResponse,
   LogOut,
+  McpAuthType,
+  McpDiscoverResponse,
   PublishResponse,
   QuestionIn,
   TemplateType,
@@ -113,5 +115,19 @@ export const api = {
     request<DraftAIResponse>("/ai/draft", {
       method: "POST",
       body: JSON.stringify(payload),
+    }),
+
+  discoverMcpTools: (payload: {
+    url: string;
+    auth_type: McpAuthType;
+    credential?: string;
+  }) =>
+    request<McpDiscoverResponse>("/mcp/discover", {
+      method: "POST",
+      body: JSON.stringify(
+        payload.auth_type === "none"
+          ? { url: payload.url, auth_type: payload.auth_type }
+          : payload,
+      ),
     }),
 };

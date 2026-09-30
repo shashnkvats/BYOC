@@ -56,6 +56,7 @@ export function McpToolSelectorConfigure({
   error,
   submitting,
   onCreate,
+  onImportFromServer,
 }: {
   header: ReactNode;
   question: EditableQuestion;
@@ -63,6 +64,7 @@ export function McpToolSelectorConfigure({
   error: string | null;
   submitting: boolean;
   onCreate: () => void;
+  onImportFromServer: () => void;
 }) {
   const [editingQuestion, setEditingQuestion] = useState(false);
   const canCreate = isValidToolSelector(question) && !submitting;
@@ -159,7 +161,14 @@ export function McpToolSelectorConfigure({
         <div className="mt-6 flex flex-wrap items-end justify-between gap-2">
           <p className="label m-0">Available tools</p>
           <p className="text-[13px] text-ink-mute">
-            Add manually · <span className="font-semibold text-copper">Import from MCP server</span>
+            Add manually ·{" "}
+            <button
+              type="button"
+              onClick={onImportFromServer}
+              className="border-0 bg-transparent p-0 font-semibold text-copper"
+            >
+              Import from MCP server
+            </button>
           </p>
         </div>
 

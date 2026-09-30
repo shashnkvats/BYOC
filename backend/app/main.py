@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
-from .routers import classifiers, classify, draft_ai, logs, publish, test
+from .routers import classifiers, classify, draft_ai, logs, mcp, publish, test
 
 settings = get_settings()
 
@@ -30,6 +30,7 @@ app.include_router(test.router)
 app.include_router(publish.router)
 app.include_router(logs.router)
 app.include_router(draft_ai.router)
+app.include_router(mcp.router)
 app.include_router(classify.router)
 
 
