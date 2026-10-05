@@ -20,6 +20,9 @@ export function GuardrailConfigure({
   error,
   submitting,
   onCreate,
+  primaryLabel = "Create guardrail",
+  submittingLabel = "Going live...",
+  secondary,
 }: {
   header: ReactNode;
   name: string;
@@ -28,6 +31,9 @@ export function GuardrailConfigure({
   error: string | null;
   submitting: boolean;
   onCreate: () => void;
+  primaryLabel?: string;
+  submittingLabel?: string;
+  secondary?: ReactNode;
 }) {
   const flagValid = isValidFlagKey(question.key);
   const canCreate = flagValid && question.instructions.trim().length > 0 && !submitting;
@@ -113,15 +119,17 @@ export function GuardrailConfigure({
               disabled={!canCreate}
               className="btn btn-copper w-fit text-[14px] font-semibold"
             >
-              {submitting ? "Going live..." : "Create guardrail"}
+              {submitting ? submittingLabel : primaryLabel}
             </button>
-            <Link
-              href="/classifiers/new?from=guardrail"
-              className="inline-flex items-center gap-1.5 text-sm text-ink-mute no-underline hover:text-ink"
-            >
-              <ArrowLeft size={14} strokeWidth={1.5} aria-hidden="true" />
-              Back
-            </Link>
+            {secondary ?? (
+              <Link
+                href="/classifiers/new?from=guardrail"
+                className="inline-flex items-center gap-1.5 text-sm text-ink-mute no-underline hover:text-ink"
+              >
+                <ArrowLeft size={14} strokeWidth={1.5} aria-hidden="true" />
+                Back
+              </Link>
+            )}
           </div>
         </div>
 

@@ -27,6 +27,9 @@ export function ModelRouterConfigure({
   error,
   submitting,
   onCreate,
+  primaryLabel = "Create router",
+  submittingLabel = "Going live...",
+  secondary,
 }: {
   header: ReactNode;
   question: EditableQuestion;
@@ -34,6 +37,9 @@ export function ModelRouterConfigure({
   error: string | null;
   submitting: boolean;
   onCreate: () => void;
+  primaryLabel?: string;
+  submittingLabel?: string;
+  secondary?: ReactNode;
 }) {
   const canCreate = isValidModelRouter(question) && !submitting;
   const responseKey = isValidFlagKey(question.key) ? question.key.trim() : "target_model";
@@ -199,15 +205,17 @@ export function ModelRouterConfigure({
           disabled={!canCreate}
           className="btn btn-copper w-fit text-[14px] font-semibold"
         >
-          {submitting ? "Going live..." : "Create router"}
+          {submitting ? submittingLabel : primaryLabel}
         </button>
-        <Link
-          href="/classifiers/new?from=model_routing"
-          className="inline-flex items-center gap-1.5 text-sm text-ink-mute no-underline hover:text-ink"
-        >
-          <ArrowLeft size={14} strokeWidth={1.5} aria-hidden="true" />
-          Back
-        </Link>
+        {secondary ?? (
+          <Link
+            href="/classifiers/new?from=model_routing"
+            className="inline-flex items-center gap-1.5 text-sm text-ink-mute no-underline hover:text-ink"
+          >
+            <ArrowLeft size={14} strokeWidth={1.5} aria-hidden="true" />
+            Back
+          </Link>
+        )}
       </div>
     </div>
   );

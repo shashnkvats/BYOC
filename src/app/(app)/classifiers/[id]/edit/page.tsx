@@ -1,24 +1,62 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { GuardrailConfigure } from "@/components/GuardrailConfigure";
+import { McpImportConnect } from "@/components/McpImportConnect";
+import { McpImportSelect } from "@/components/McpImportSelect";
+import {
+  isValidToolSelector,
+  McpToolSelectorConfigure,
+  seedMcpToolSelector,
+} from "@/components/McpToolSelectorConfigure";
+import {
+  isValidModelRouter,
+  ModelRouterConfigure,
+} from "@/components/ModelRouterConfigure";
 import { EditableQuestion, QuestionEditor } from "@/components/QuestionEditor";
 import { ClassifierPageHeader, StatusBadge } from "@/components/ui";
 import { api, ApiError } from "@/lib/api-client";
+import { isValidFlagKey, seedGuardrailQuestion } from "@/lib/guardrail-seed";
+import { mergeImportedTools } from "@/lib/mcp-import";
 import {
   editableToQuestionIn,
   makeBlankEditable,
   questionInToEditable,
   questionOutToEditable,
 } from "@/lib/question-convert";
+import { TEMPLATE_QUESTIONS } from "@/lib/template-questions";
 import { TemplateTypeHint } from "@/lib/templates";
-import type { BelowThresholdAction, ClassifierOut } from "@/lib/types";
+import type { BelowThresholdAction, ClassifierOut, McpDiscoverResponse } from "@/lib/types";
 
-export default function EditClassifierPage() {
+function EditorActions({
+  saved,
+  onDelete,
+}: {
+  saved: boolean;
+  onDelete: () => void;
+}) {
+  return (
+    <>
+      {saved && <span className="text-sm text-moss">Saved.</span>}
+      <button
+        type="button"
+        onClick={onDelete}
+        className="ml-auto text-sm text-ink-mute transition-colors hover:text-danger"
+      >
+        Delete classifier
+      </button>
+    </>
+  );
+}
+
+function EditClassifierPageInner() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const step = searchParams.get("step");
 
   const [classifier, setClassifier] = useState<ClassifierOut | null>(null);
   const [name, setName] = useState("");
@@ -26,6 +64,7 @@ export default function EditClassifierPage() {
   const [belowThresholdAction, setBelowThresholdAction] =
     useState<BelowThresholdAction>("flag_for_review");
   const [questions, setQuestions] = useState<EditableQuestion[]>([]);
+  const [discovered, setDiscovered] = useState<McpDiscoverResponse | null>(null);
 
   const [aiDescription, setAiDescription] = useState("");
   const [aiDrafting, setAiDrafting] = useState(false);
@@ -47,11 +86,41 @@ export default function EditClassifierPage() {
         setQuestions(c.questions.map(questionOutToEditable));
       })
       .catch((e) =>
-        setLoadError(e instanceof ApiError ? e.message : "Failed to load classifier")
+        setLoadError(e instanceof ApiError ? e.message : "Failed to load classifier"),
       );
   }, [id]);
 
+  function setFirstQuestion(next: EditableQuestion) {
+    setQuestions((prev) => {
+      if (prev.length === 0) return [next];
+      return prev.map((q, i) => (i === 0 ? next : q));
+    });
+  }
+
   async function handleSave() {
+    if (!classifier) return;
+    if (classifier.template_type === "guardrail") {
+      const q = questions[0];
+      if (!q || !q.instructions.trim() || !isValidFlagKey(q.key)) {
+        setSaveError("Add a yes/no question and a flag name.");
+        return;
+      }
+    }
+    if (classifier.template_type === "model_routing") {
+      const q = questions[0];
+      if (!q || !isValidModelRouter(q)) {
+        setSaveError("Add a question, a response key, and at least two named routes.");
+        return;
+      }
+    }
+    if (classifier.template_type === "mcp_tool_routing") {
+      const q = questions[0];
+      if (!q || !isValidToolSelector(q)) {
+        setSaveError("Add a question, a response key, and at least two named tools.");
+        return;
+      }
+    }
+
     setSaving(true);
     setSaveError(null);
     setSaved(false);
@@ -106,20 +175,142 @@ export default function EditClassifierPage() {
     return <p className="copy text-ink-mute">Loading the classifier...</p>;
   }
 
+  const header = (
+    <ClassifierPageHeader
+      id={id}
+      current="edit"
+      kicker="Editor"
+      title={classifier.name}
+      meta={
+        <>
+          <TemplateTypeHint type={classifier.template_type} />
+          <StatusBadge status={classifier.status} />
+        </>
+      }
+    />
+  );
+
+  const editorActions = <EditorActions saved={saved} onDelete={handleDelete} />;
+
+  if (classifier.template_type === "mcp_tool_routing" && step === "mcp-import") {
+    return (
+      <div className="mx-auto max-w-[56rem]">
+        {header}
+        <div className="mt-8">
+          <McpImportConnect
+            onBack={() => router.push(`/classifiers/${id}/edit`)}
+            onDiscovered={(result) => {
+              setDiscovered(result);
+              router.push(`/classifiers/${id}/edit?step=mcp-select`);
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (classifier.template_type === "mcp_tool_routing" && step === "mcp-select") {
+    if (!discovered) {
+      return (
+        <div className="mx-auto max-w-[56rem]">
+          {header}
+          <div className="mt-8">
+            <McpImportConnect
+              onBack={() => router.push(`/classifiers/${id}/edit`)}
+              onDiscovered={(result) => {
+                setDiscovered(result);
+                router.push(`/classifiers/${id}/edit?step=mcp-select`);
+              }}
+            />
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="mx-auto max-w-[56rem]">
+        {header}
+        <div className="mt-8">
+          <McpImportSelect
+            discovery={discovered}
+            onBack={() => router.push(`/classifiers/${id}/edit?step=mcp-import`)}
+            onCancel={() => router.push(`/classifiers/${id}/edit`)}
+            onImport={(tools) => {
+              setQuestions((prev) => {
+                const current = prev[0] ?? seedMcpToolSelector();
+                return [
+                  {
+                    ...current,
+                    choicePairs: mergeImportedTools(current.choicePairs, tools),
+                  },
+                ];
+              });
+              router.push(`/classifiers/${id}/edit`);
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (classifier.template_type === "guardrail") {
+    const question =
+      questions[0] ??
+      questionInToEditable(seedGuardrailQuestion({ name, description }));
+    return (
+      <GuardrailConfigure
+        header={header}
+        name={name}
+        question={question}
+        onQuestion={setFirstQuestion}
+        error={saveError}
+        submitting={saving}
+        onCreate={handleSave}
+        primaryLabel="Save"
+        submittingLabel="Saving..."
+        secondary={editorActions}
+      />
+    );
+  }
+
+  if (classifier.template_type === "model_routing") {
+    const question =
+      questions[0] ?? questionInToEditable(TEMPLATE_QUESTIONS.model_routing[0]);
+    return (
+      <ModelRouterConfigure
+        header={header}
+        question={question}
+        onQuestion={setFirstQuestion}
+        error={saveError}
+        submitting={saving}
+        onCreate={handleSave}
+        primaryLabel="Save"
+        submittingLabel="Saving..."
+        secondary={editorActions}
+      />
+    );
+  }
+
+  if (classifier.template_type === "mcp_tool_routing") {
+    const question = questions[0] ?? seedMcpToolSelector();
+    return (
+      <McpToolSelectorConfigure
+        header={header}
+        question={question}
+        onQuestion={setFirstQuestion}
+        error={saveError}
+        submitting={saving}
+        onCreate={handleSave}
+        onImportFromServer={() => router.push(`/classifiers/${id}/edit?step=mcp-import`)}
+        primaryLabel="Save"
+        submittingLabel="Saving..."
+        secondary={editorActions}
+      />
+    );
+  }
+
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-8">
-      <ClassifierPageHeader
-        id={id}
-        current="edit"
-        kicker="Editor"
-        title={classifier.name}
-        meta={
-          <>
-            <TemplateTypeHint type={classifier.template_type} />
-            <StatusBadge status={classifier.status} />
-          </>
-        }
-      />
+      {header}
 
       <section className="card flex flex-col gap-5 p-5 sm:p-6">
         <p className="kicker">The brief</p>
@@ -230,5 +421,13 @@ export default function EditClassifierPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function EditClassifierPage() {
+  return (
+    <Suspense fallback={<p className="copy text-ink-mute">Loading the classifier...</p>}>
+      <EditClassifierPageInner />
+    </Suspense>
   );
 }

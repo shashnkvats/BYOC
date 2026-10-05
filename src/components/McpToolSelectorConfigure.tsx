@@ -57,6 +57,9 @@ export function McpToolSelectorConfigure({
   submitting,
   onCreate,
   onImportFromServer,
+  primaryLabel = "Create tool selector",
+  submittingLabel = "Going live...",
+  secondary,
 }: {
   header: ReactNode;
   question: EditableQuestion;
@@ -65,6 +68,9 @@ export function McpToolSelectorConfigure({
   submitting: boolean;
   onCreate: () => void;
   onImportFromServer: () => void;
+  primaryLabel?: string;
+  submittingLabel?: string;
+  secondary?: ReactNode;
 }) {
   const [editingQuestion, setEditingQuestion] = useState(false);
   const canCreate = isValidToolSelector(question) && !submitting;
@@ -260,15 +266,17 @@ export function McpToolSelectorConfigure({
           disabled={!canCreate}
           className="btn btn-copper w-fit text-[14px] font-semibold"
         >
-          {submitting ? "Going live..." : "Create tool selector"}
+          {submitting ? submittingLabel : primaryLabel}
         </button>
-        <Link
-          href="/classifiers/new?from=mcp_tool_routing"
-          className="inline-flex items-center gap-1.5 text-sm text-ink-mute no-underline hover:text-ink"
-        >
-          <ArrowLeft size={14} strokeWidth={1.5} aria-hidden="true" />
-          Back
-        </Link>
+        {secondary ?? (
+          <Link
+            href="/classifiers/new?from=mcp_tool_routing"
+            className="inline-flex items-center gap-1.5 text-sm text-ink-mute no-underline hover:text-ink"
+          >
+            <ArrowLeft size={14} strokeWidth={1.5} aria-hidden="true" />
+            Back
+          </Link>
+        )}
       </div>
     </div>
   );
