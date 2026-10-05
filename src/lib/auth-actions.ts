@@ -3,7 +3,10 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "./supabase/server";
 
-export type AuthFormState = { error?: string } | undefined;
+export type AuthFormState = {
+  error?: string;
+  confirmationEmail?: string;
+} | undefined;
 
 export async function login(
   _prevState: AuthFormState,
@@ -52,12 +55,25 @@ export async function signup(
     redirect("/dashboard");
   }
 
-  return {
-    error:
-      "Account created. Check your email to confirm it, then log in. " +
-      "(If email sending isn't configured for this project yet, confirm the " +
-      "user directly in Supabase, then log in.)",
-  };
+  if (process.env.NODE_ENV !== "production") {
+    console.info("Signup succeeded without a session; email confirmation is required.");
+  }
+
+  return { confirmationEmail: email };
+}
+
+export async function resendSignupEmail(email: string): Promise<{ error?: string }> {
+  const trimmed = email.trim();
+  if (!trimmed) {
+    return { error: "We need an email address to resend the confirmation." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.resend({ type: "signup", email: trimmed });
+  if (error) {
+    return { error: error.message };
+  }
+  return {};
 }
 
 export async function logout() {

@@ -13,7 +13,7 @@ export function AuthShell({
   italic: string;
   lede: string;
   children: React.ReactNode;
-  footer: React.ReactNode;
+  footer?: React.ReactNode;
 }) {
   return (
     <div className="flex min-h-screen flex-col">
@@ -50,7 +50,7 @@ is_harmful        false   0.94`}
           </h1>
           <p className="lede mt-3 text-ink-mute">{lede}</p>
           <div className="card mt-8 p-7 sm:p-8">{children}</div>
-          <div className="mt-6">{footer}</div>
+          {footer && <div className="mt-6">{footer}</div>}
         </div>
       </main>
     </div>
